@@ -22,11 +22,22 @@ namespace ContractController
 
         ApplicationLauncherButton CCButton = null;
         private Rect mainGUI = new Rect(150, 150, 250, 500);
+
         private bool showGUI = false;
         int mainGUID;
         int prefEditGUID;
+        int parameterGuid;
+        int parameterListGuid;
+        int autoParameterGuid;
+        int autoParameterListGuid;
+        int bodyGuid;
+        int bodyListGuid;
         Vector2 scrollPosition;
         Vector2 scrollPosition2;
+        Vector2 scrollPosition3;
+        Vector2 scrollPosition4;
+        Vector2 scrollPosition5;
+        Vector2 scrollPosition6;
 
         Type editingType;
 
@@ -51,28 +62,41 @@ namespace ContractController
         String maxPrestiege = "3";
 
         bool showtypeprefeditor = false;
+        bool showParameterChangeGUI = false;
+        bool showParameterListGUI = false;
+        bool showAutoParamGUI = false;
+        
 
-        bool displayed = false;
+
         bool done = false;
         bool inited = false;
-        bool needsInit = true;
+        bool buttonNeedsInit = true;
+        bool isSorting = false;
 
         //Contract variables
         List<Type> blockedTypes = new List<Type>();
         Dictionary<Type, TypePreference> typeMap = new Dictionary<Type, TypePreference>();
         Dictionary<TypePreference, List<String>> typePrefDict = new Dictionary<TypePreference, List<string>>();
+        List<Type> parameters = new List<Type>();
 
-        
         void Awake()
         {
+            DontDestroyOnLoad(this);
             Debug.Log("*yawn* I'm awake");
             mainGUID = Guid.NewGuid().GetHashCode();
             prefEditGUID = Guid.NewGuid().GetHashCode();
+            parameterGuid = Guid.NewGuid().GetHashCode();
+            parameterListGuid = Guid.NewGuid().GetHashCode();
+            autoParameterGuid = Guid.NewGuid().GetHashCode();
+            autoParameterListGuid = Guid.NewGuid().GetHashCode();
             //Debug.Log("Active+Enabled?: " + ContractSystem.Instance.isActiveAndEnabled);
             done = false;
 
-
-            InitButtons();
+            if(buttonNeedsInit)
+            {
+                InitButtons();
+            }
+            
         }
         void FixedUpdate()
         {
@@ -86,7 +110,7 @@ namespace ContractController
                 {
                     initTypePreferences();
                 }
-                if (!done)
+                if (isSorting)
                 {
 
                     //Debug.Log("Contract types: " + Contracts.ContractSystem.ContractTypes);
@@ -102,8 +126,11 @@ namespace ContractController
                             //check blocked agents
                             //check intParams
                             //check finances
-
+                            
+                            
                             if (checkForBlockedType(c)) { toDelete.Add(c); }
+                            /*
+                            
                             if (checkForBlockedAgent(c)) { toDelete.Add(c); }
                             if (checkForBlockedMentality(c)) { toDelete.Add(c); }
                             if (checkForBlockedParameters(c)) { toDelete.Add(c); }
@@ -136,7 +163,7 @@ namespace ContractController
                             if (checkForWhitedPrestiege(c)) { toAccept.Add(c); }
                             if (checkForWhitedString(c)) { toAccept.Add(c); }
                             if (checkForWhitedType(c)) { toAccept.Add(c); }
-
+                            //*/
                         }
                     }
                     else
@@ -145,7 +172,6 @@ namespace ContractController
                     }
                     removeBlackedContracts(toDelete);
                     acceptWhitedContracts(toAccept);
-                    done = true;
                 }
             }
         }
@@ -207,7 +233,7 @@ namespace ContractController
             GameEvents.onShowUI.Add(ShowGUI);
             GameEvents.onHideUI.Add(HideGUI);
 
-            needsInit = false;
+            buttonNeedsInit = false;
         }
 
         void DestroyButtons()
@@ -221,7 +247,7 @@ namespace ContractController
                 ApplicationLauncher.Instance.RemoveModApplication(CCButton);
 
 
-            needsInit = true;
+            buttonNeedsInit = true;
         }
 
         void OnDestroy()
@@ -233,6 +259,7 @@ namespace ContractController
         {
             PluginConfiguration config = PluginConfiguration.CreateForType<HeadMaster>();
             config.SetValue("TypePreferences", typeMap);
+            config.SetValue("blockedTypes", blockedTypes);
             config.save();
         }
         void Load(ConfigNode node)
@@ -240,6 +267,7 @@ namespace ContractController
             PluginConfiguration config = PluginConfiguration.CreateForType<HeadMaster>();
             config.load();
             typeMap = config.GetValue<Dictionary<Type, TypePreference>>("TypePreferences");
+            blockedTypes = config.GetValue<List<Type>>("blockedTypes");
         }
 
 
@@ -247,14 +275,33 @@ namespace ContractController
         {
             if (showGUI)
             {
-                mainGUI = GUILayout.Window(mainGUID, mainGUI, mainGUIWindow, "Contract Controller~");
+                mainGUI = GUI.Window(mainGUID, mainGUI, mainGUIWindow, "Contract Controller~");
                 if (showtypeprefeditor)
                 {
-                    Rect rect = new Rect(mainGUI.right, mainGUI.top, 250, 400);
+                    Rect rect = new Rect(mainGUI.right, mainGUI.top, 250, 475);
+                    rect = GUI.Window(prefEditGUID, rect, editTypePrefGUI, "" + editingType.Name + "~");
 
-                    rect = GUILayout.Window(prefEditGUID, rect, editTypePrefGUI, "" + editingType.Name);
+                    if (showParameterChangeGUI)
+                    {
+                        showAutoParamGUI = false;
+                        Rect rect1 = new Rect(rect.right, rect.top, 250, 300);
+                        rect1 = GUI.Window(parameterGuid, rect1, changeParameterGUI, "Parameter List~");
+                        Rect rect2 = new Rect(rect.right, rect.top + rect.height - 160, 250, 300);
+                        rect2 = GUI.Window(parameterListGuid, rect2, parameterListGUI, "Blacklisted Parameters~");
+                    }
+                    if (showAutoParamGUI)
+                    {
+                        showParameterChangeGUI = false;
+                        Rect rect1 = new Rect(rect.right, rect.top, 250, 300);
+                        rect1 = GUI.Window(autoParameterGuid, rect1, autoParameterListGUI, "Auto-Parameter List~");
+                        Rect rect2 = new Rect(rect.right, rect.top + rect.height - 170, 250, 300);
+                        rect2 = GUI.Window(autoParameterListGuid, rect2, autoListParameterGUI, "AutoParameters~");
+                    }
                 }
+                
             }
+            
+            
 
         }
         public void mainGUIWindow(int windowID)
@@ -271,11 +318,33 @@ namespace ContractController
                 {
                     editingType = t;
                     showtypeprefeditor = true;
-
+                    showParameterChangeGUI = false;
+                    showParameterListGUI = false;
+                    showAutoParamGUI = false;
                 }
 
             }
             GUILayout.EndScrollView();
+            if(isSorting)
+            {
+                if (GUILayout.Button("Stop Sorting"))
+                {
+                    isSorting = false;
+                }
+            }
+            else
+            {
+                if (GUILayout.Button("Start Sorting"))
+                {
+                    isSorting = true;
+                }
+            }
+            
+            if(GUILayout.Button("Close"))
+            {
+                showGUI = false;
+            }
+            
 
             GUI.DragWindow();
         }
@@ -284,9 +353,10 @@ namespace ContractController
         {
             //minFunds
             TypePreference tp = typeMap[editingType];
+            //Debug.Log("Editing type: " + editingType.Name);
             //maxFunds
             GUILayout.BeginVertical();
-            scrollPosition2 = GUILayout.BeginScrollView(scrollPosition2, GUILayout.Width(225), GUILayout.Height(250));
+            scrollPosition2 = GUILayout.BeginScrollView(scrollPosition2, GUILayout.Width(235), GUILayout.Height(250));
             //mainGUI.position = scrollPosition;
 
             GUILayout.BeginHorizontal();
@@ -352,54 +422,202 @@ namespace ContractController
 
 
             GUILayout.EndVertical();
-            if (GUILayout.Button("Save"))
+            if (blockedTypes.Contains(editingType))
+            {
+                if (GUILayout.Button("Accept Type"))
+                {
+                    blockedTypes.Remove(editingType);
+                }
+            }
+            else
+            {
+                if (GUILayout.Button("Reject Type"))
+                {
+                    blockedTypes.Add(editingType);
+                }
+            }
+            if (GUILayout.Button("Blacklist Parameters"))
+            {
+                showParameterChangeGUI = !showParameterChangeGUI;
+                showParameterListGUI = !showParameterListGUI;
+            }
+            if(GUILayout.Button("AutoAccept Parameters"))
+            {
+                showAutoParamGUI = !showAutoParamGUI;
+                
+            }
+            if(GUILayout.Button("Blacklist Bodies"))
             {
 
-                tp.minFundsAdvance = float.Parse(typePrefDict[tp][0]);
-                tp.maxFundsAdvance = float.Parse(typePrefDict[tp][1]);
-                tp.minFundsCompletion = float.Parse(typePrefDict[tp][2]);
-                tp.maxFundsCompletion = float.Parse(typePrefDict[tp][3]);
-                tp.minFundsFailure = float.Parse(typePrefDict[tp][4]);
-                tp.maxFundsFailure = float.Parse(typePrefDict[tp][5]);
+            }
+            if(GUILayout.Button("AutoAccept Bodies"))
+            {
 
-                tp.minRepCompletion = float.Parse(typePrefDict[tp][6]);
-                tp.maxRepCompletion = float.Parse(typePrefDict[tp][7]);
-                tp.minRepFailure = float.Parse(typePrefDict[tp][8]);
-                tp.maxRepFailure = float.Parse(typePrefDict[tp][9]);
+            }
+            if(GUILayout.Button("Blacklist Strings"))
+            {
 
-                tp.minScienceCompletion = float.Parse(typePrefDict[tp][10]);
-                tp.maxScienceCompletion = float.Parse(typePrefDict[tp][11]);
+            }
+            
 
-                tp.minParams = int.Parse(typePrefDict[tp][12]);
-                tp.maxParams = int.Parse(typePrefDict[tp][13]);
+            if (GUILayout.Button("Save"))
+            {
+                try
+                {
+                    //Debug.Log(typePrefDict.Count);
+                    //Debug.Log(typePrefDict[typeMap[editingType]].Count);
+                    TypePreference tp1 = typeMap[editingType];
+                    tp1.minFundsAdvance = float.Parse(typePrefDict[tp][0]);
+                    tp1.maxFundsAdvance = float.Parse(typePrefDict[tp][1]);
+                    tp1.minFundsCompletion = float.Parse(typePrefDict[tp][2]);
+                    tp1.maxFundsCompletion = float.Parse(typePrefDict[tp][3]);
+                    tp1.minFundsFailure = float.Parse(typePrefDict[tp][4]);
+                    tp1.maxFundsFailure = float.Parse(typePrefDict[tp][5]);
 
+                    tp1.minRepCompletion = float.Parse(typePrefDict[tp][6]);
+                    tp1.maxRepCompletion = float.Parse(typePrefDict[tp][7]);
+                    tp1.minRepFailure = float.Parse(typePrefDict[tp][8]);
+                    tp1.maxRepFailure = float.Parse(typePrefDict[tp][9]);
+
+                    tp1.minScienceCompletion = float.Parse(typePrefDict[tp][10]);
+                    tp1.maxScienceCompletion = float.Parse(typePrefDict[tp][11]);
+
+                    tp1.minParams = int.Parse(typePrefDict[tp][12]);
+                    tp1.maxParams = int.Parse(typePrefDict[tp][13]);
+                    tp1.minPrestiege = int.Parse(typePrefDict[tp][14]);
+                    tp1.maxPrestiege = int.Parse(typePrefDict[tp][15]);
+
+                    tp = tp1;
+                    Debug.Log("Settings Saved");
+                }
+                catch(Exception e)
+                {
+                    Debug.Log("numb: " + typePrefDict[tp].Count);
+                }
                 
-                Debug.Log("Settings Saved");
             }
             if (GUILayout.Button("Close"))
             {
                 showtypeprefeditor = false;
             }
         }
+        public void changeParameterGUI(int windowID)
+        {
+            TypePreference tp = typeMap[editingType];
+            List<Type> bloop = tp.blockedParameters;
+            scrollPosition3 = GUILayout.BeginScrollView(scrollPosition3, GUILayout.Width(235), GUILayout.Height(290));
+            foreach (Type cp in ContractSystem.ParameterTypes)
+            {
+                if(!bloop.Contains(cp))
+                {
+                    if (GUILayout.Button("" + cp.Name))
+                    {
+                        tp.blockedParameters.Add(cp);
+                        
+                    }
+                }
+            }
+            GUILayout.EndScrollView();
+            
+            
+        }
+        public void parameterListGUI(int windowID)
+        {
+            TypePreference tp = typeMap[editingType];
+            List<Type> bloop = tp.blockedParameters;
 
+            scrollPosition4 = GUILayout.BeginScrollView(scrollPosition4, GUILayout.Width(235), GUILayout.Height(290));
+            foreach (Type cp in bloop)
+            {
+                if (GUILayout.Button(cp.Name))
+                {
+                    try
+                    {
+                        tp.blockedParameters.Remove(cp);
+                    }
+                    catch(Exception e)
+                    {
+
+                    }
+                    
+                }
+            }
+            GUILayout.EndScrollView();
+            
+        }
+        public void autoParameterListGUI(int windowID)
+        {
+            TypePreference tp = typeMap[editingType];
+            List<Type> bloop = tp.autoParameters;
+            scrollPosition3 = GUILayout.BeginScrollView(scrollPosition3, GUILayout.Width(235), GUILayout.Height(290));
+            foreach (Type cp in ContractSystem.ParameterTypes)
+            {
+                if (!bloop.Contains(cp))
+                {
+                    if (GUILayout.Button("" + cp.Name))
+                    {
+                        if(tp.blockedParameters.Contains(cp))
+                        {
+                            try
+                            {
+                                tp.blockedParameters.Remove(cp);
+                            }
+                            catch(Exception e)
+                            {
+
+                            }
+                            
+                        }
+                        tp.autoParameters.Add(cp);
+
+                    }
+                }
+            }
+            GUILayout.EndScrollView();
+
+
+        }
+        public void autoListParameterGUI(int windowID)
+        {
+            TypePreference tp = typeMap[editingType];
+            List<Type> bloop = tp.autoParameters;
+
+            scrollPosition4 = GUILayout.BeginScrollView(scrollPosition4, GUILayout.Width(235), GUILayout.Height(290));
+            foreach (Type cp in bloop)
+            {
+                if (GUILayout.Button(cp.Name))
+                {
+                    try
+                    {
+                        tp.autoParameters.Remove(cp);
+                    }
+                    catch (Exception e)
+                    {
+
+                    }
+
+                }
+            }
+            GUILayout.EndScrollView();
+
+        }
         public void initTypePreferences()
         {
             Debug.Log("Initing type preferences");
-            if(ContractSystem.ContractTypes != null)
+            if (ContractSystem.ContractTypes != null)
             {
                 foreach (Type t in ContractSystem.ContractTypes)
                 {
-                    Debug.Log("Adding Type: " + t.ToString());
+                    Debug.Log("Adding Type: " + t.Name);
                     TypePreference tp = TypePreference.getDefaultTypePreference();
-                    typeMap.Add(t, tp);
+                    
                     List<String> stringList = new List<string>();
 
                     stringList.Add(minFundsAdvance);
-                    stringList.Add(minFundsComplete);
-                       
-                    stringList.Add(minFundsFailure);
                     stringList.Add(maxFundsAdvance);
+                    stringList.Add(minFundsComplete);
                     stringList.Add(maxFundsComplete);
+                    stringList.Add(minFundsFailure);
                     stringList.Add(maxFundsFailure);
 
                     stringList.Add(minRepComplete);
@@ -414,7 +632,8 @@ namespace ContractController
                     stringList.Add(maxParams);
                     stringList.Add(minPrestiege);
                     stringList.Add(maxPrestiege);
-                    typePrefDict.Add(tp,stringList);
+                    typePrefDict.Add(tp, stringList);
+                    typeMap.Add(t, tp);
                 }
             }
             inited = true;
@@ -604,11 +823,11 @@ namespace ContractController
         {
             Type t = c.GetType();
             TypePreference tp = typeMap[t];
-            foreach (ContractParameter cp in tp.blockedParameters)
+            foreach (Type cp in tp.blockedParameters)
             {
-                foreach (ContractParameter cP in c.AllParameters)
+                foreach (ContractParameter CP in c.AllParameters.ToList())
                 {
-                    if (cp == cP)
+                    if (cp.Equals(CP.GetType()))
                     {
                         return true;
                     }
@@ -687,11 +906,11 @@ namespace ContractController
         {
             Type t = c.GetType();
             TypePreference tp = typeMap[t];
-            foreach (ContractParameter cp in tp.autoParameters)
+            foreach (Type cp in tp.autoParameters)
             {
-                foreach (ContractParameter cP in c.AllParameters)
+                foreach (ContractParameter CP in c.AllParameters.ToList())
                 {
-                    if (cp == cP)
+                    if (cp.Equals(CP.GetType()))
                     {
                         return true;
                     }
@@ -718,7 +937,7 @@ namespace ContractController
             TypePreference tp = typeMap[t];
             foreach (Contract.ContractPrestige p in tp.autoPrestieges)
             {
-                if (p == c.Prestige)
+                if (tp.autoPrestieges.Contains(p))
                 {
                     return true;
                 }
@@ -732,7 +951,7 @@ namespace ContractController
             foreach (AgentMentality am in tp.autoMentalities)
             {
                 foreach (AgentMentality aM in c.Agent.Mentality)
-                    if (aM == am)
+                    if (aM.Equals(am))
                     {
                         return true;
                     }
@@ -745,7 +964,7 @@ namespace ContractController
             TypePreference tp = typeMap[t];
             foreach (Type type in tp.autoTypes)
             {
-                if (type == t)
+                if (type.Equals(t))
                 {
                     return true;
                 }
@@ -760,7 +979,7 @@ namespace ContractController
 
             foreach (Agent a in tp.autoAgents)
             {
-                if (c.Agent == a)
+                if (c.Agent.Equals(a))
                 {
                     return true;
                 }

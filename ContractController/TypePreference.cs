@@ -41,7 +41,7 @@ namespace ContractController
         
         public List<String> blockedStrings;
         public List<String> blockedBodies;
-        public List<ContractParameter> blockedParameters;
+        public List<Type> blockedParameters;
         public List<Agent> blockedAgents;
         public List<Contract.ContractPrestige> blockedPrestieges;
         public List<AgentMentality> blockedMentalities;
@@ -50,7 +50,7 @@ namespace ContractController
         public List<String> autoStrings;
         public List<Type> autoTypes;
         public List<String> autoBodies;
-        public List<ContractParameter> autoParameters;
+        public List<Type> autoParameters;
         public List<Agent> autoAgents;
         public List<Contract.ContractPrestige> autoPrestieges;
         public List<AgentMentality> autoMentalities;
@@ -82,7 +82,7 @@ namespace ContractController
 
             tp.blockedStrings = new List<string>();
             tp.blockedBodies = new List<string>();
-            tp.blockedParameters = new List<ContractParameter>();
+            tp.blockedParameters = new List<Type>();
             tp.blockedAgents = new List<Agent>();
             tp.blockedPrestieges = new List<Contract.ContractPrestige>();
             tp.blockedMentalities = new List<AgentMentality>();
@@ -90,7 +90,7 @@ namespace ContractController
             tp.autoStrings = new List<string>();
             tp.autoTypes = new List<Type>();
             tp.autoBodies = new List<string>();
-            tp.autoParameters = new List<ContractParameter>();
+            tp.autoParameters = new List<Type>();
             tp.autoAgents = new List<Agent>();
             tp.autoPrestieges = new List<Contract.ContractPrestige>();
             tp.autoMentalities = new List<AgentMentality>();
