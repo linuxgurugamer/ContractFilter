@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,18 +13,20 @@ using Contracts.Predicates;
 using Contracts.Templates;
 using Contracts.Agents.Mentalities;
 
+using File = System.IO.File;
+
 namespace ContractController
 {
-    [KSPAddon(KSPAddon.Startup.SpaceCentre, false)]
+    [KSPAddon(KSPAddon.Startup.SpaceCentre, true)]
     public class HeadMaster : MonoBehaviour
     {
 
         //Per-type blocks and prefers
 
         ApplicationLauncherButton CCButton = null;
-        private Rect mainGUI = new Rect(150, 150, 250, 500);
+        private Rect mainGUI = new Rect(150, 150, 250, 525);
 
-        private bool showGUI = false;
+        private bool showGUI = true;
         int mainGUID;
         int prefEditGUID;
         int parameterGuid;
@@ -38,45 +41,33 @@ namespace ContractController
         Vector2 scrollPosition4;
         Vector2 scrollPosition5;
         Vector2 scrollPosition6;
+        Vector2 scrollPosition7;
+        Vector2 scrollPosition8;
 
         Type editingType;
 
-        String minFundsAdvance = "0";
-        String maxFundsAdvance = "150000";
-        String minFundsComplete = "0";
-        String maxFundsComplete = "150000";
-        String minFundsFailure = "0";
-        String maxFundsFailure = "150000";
-
-        String minRepComplete = "0";
-        String maxRepComplete = "100";
-        String minRepFailure = "0";
-        String maxRepFailure = "100";
-
-        String minScienceComplete = "0";
-        String maxScienceComplete = "100";
-
-        String minParams = "0";
-        String maxParams = "20";
-        String minPrestiege = "1";
-        String maxPrestiege = "3";
 
         bool showtypeprefeditor = false;
         bool showParameterChangeGUI = false;
         bool showParameterListGUI = false;
         bool showAutoParamGUI = false;
-        
+        bool showBodyBlacklistGUI = false;
+        bool showBodyAutoListGUI = false;
+        bool showStringBlacklistGUI = false;
+        bool showStringWhitelistGUI = false;
 
+        String line;
 
         bool done = false;
+        [Persistent]
         bool inited = false;
+
         bool buttonNeedsInit = true;
         bool isSorting = false;
 
         //Contract variables
         List<Type> blockedTypes = new List<Type>();
         Dictionary<Type, TypePreference> typeMap = new Dictionary<Type, TypePreference>();
-        Dictionary<TypePreference, List<String>> typePrefDict = new Dictionary<TypePreference, List<string>>();
         List<Type> parameters = new List<Type>();
 
         void Awake()
@@ -89,89 +80,118 @@ namespace ContractController
             parameterListGuid = Guid.NewGuid().GetHashCode();
             autoParameterGuid = Guid.NewGuid().GetHashCode();
             autoParameterListGuid = Guid.NewGuid().GetHashCode();
+            bodyGuid = Guid.NewGuid().GetHashCode();
+            bodyListGuid = Guid.NewGuid().GetHashCode();
             //Debug.Log("Active+Enabled?: " + ContractSystem.Instance.isActiveAndEnabled);
-            done = false;
+            //done = false;
 
-            if(buttonNeedsInit)
+            if(buttonNeedsInit && HighLogic.LoadedScene == GameScenes.SPACECENTER)
             {
                 InitButtons();
             }
-            
+            //myLoad();
         }
         void FixedUpdate()
         {
             //Debug.Log("boop");
             //Debug.Log("Active+Enabled?: " + ContractSystem.Instance.isActiveAndEnabled);
 
-
-            if (ContractSystem.Instance.isActiveAndEnabled && ContractSystem.Instance != null)
+            if(HighLogic.LoadedScene == GameScenes.SPACECENTER)
             {
-                if (!inited)
+                if (ContractSystem.Instance.isActiveAndEnabled && ContractSystem.Instance != null)
                 {
-                    initTypePreferences();
-                }
-                if (isSorting)
-                {
-
-                    //Debug.Log("Contract types: " + Contracts.ContractSystem.ContractTypes);
-                    List<Contract> toDelete = new List<Contract>();
-                    List<Contract> toAccept = new List<Contract>();
-                    if (Contracts.ContractSystem.Instance.Contracts != null)
+                    if (inited == false)
                     {
-                        foreach (Contract c in Contracts.ContractSystem.Instance.Contracts)
+                        if (typeMap.Count == 0)
                         {
-                            //check blocked types
-                            //check blocked bodies
-                            //check blocked strings
-                            //check blocked agents
-                            //check intParams
-                            //check finances
+
                             
+
+                            String[] files = System.IO.Directory.GetFiles(KSPUtil.ApplicationRootPath + "/GameData/ContractController/", "*.cfg");
                             
-                            if (checkForBlockedType(c)) { toDelete.Add(c); }
-                            /*
-                            
-                            if (checkForBlockedAgent(c)) { toDelete.Add(c); }
-                            if (checkForBlockedMentality(c)) { toDelete.Add(c); }
-                            if (checkForBlockedParameters(c)) { toDelete.Add(c); }
-                            if (checkForBlockedStrings(c)) { toDelete.Add(c); }
-                            if (checkForBlockedBody(c)) { toDelete.Add(c); }
-
-                            if (checkForMaxFundsAdvance(c)) { toDelete.Add(c); }
-                            if (checkForMinFundsAdvance(c)) { toDelete.Add(c); }
-                            if (checkForMinFundsCompletion(c)) { toDelete.Add(c); }
-                            if (checkForMaxFundsCompletion(c)) { toDelete.Add(c); }
-                            if (checkForMinFundsFailure(c)) { toDelete.Add(c); }
-                            if (checkForMaxFundsFailure(c)) { toDelete.Add(c); }
-
-                            if (checkForMinRepCompletion(c)) { toDelete.Add(c); }
-                            if (checkForMaxRepCompletion(c)) { toDelete.Add(c); }
-                            if (checkForMinRepFailure(c)) { toDelete.Add(c); }
-                            if (checkForMaxRepFailure(c)) { toDelete.Add(c); }
-                            if (checkForMinFundsCompletion(c)) { toDelete.Add(c); }
-
-                            if (checkForMinScienceCompletion(c)) { toDelete.Add(c); }
-                            if (checkForMaxScienceCompletion(c)) { toDelete.Add(c); }
-
-                            if (checkForMinParams(c)) { toDelete.Add(c); }
-                            if (checkForMaxParams(c)) { toDelete.Add(c); }
-
-                            if (checkForWhitedAgent(c)) { toAccept.Add(c); }
-                            if (checkForWhitedBody(c)) { toAccept.Add(c); }
-                            if (checkForWhitedMentality(c)) { toAccept.Add(c); }
-                            if (checkForWhitedParameter(c)) { toAccept.Add(c); }
-                            if (checkForWhitedPrestiege(c)) { toAccept.Add(c); }
-                            if (checkForWhitedString(c)) { toAccept.Add(c); }
-                            if (checkForWhitedType(c)) { toAccept.Add(c); }
-                            //*/
+                            if(files.Contains(KSPUtil.ApplicationRootPath + "/GameData/ContractController/settings.cfg"))
+                            {
+                                initTypePreferences();
+                                myLoad();
+                            }
+                            else
+                            {
+                                initTypePreferences();
+                            }
+                            //Debug.Log(typeMap.Count);
+                            //myLoad();
                         }
+
+                        inited = true;
                     }
-                    else
+                    if (isSorting)
                     {
-                        Debug.Log("Contract System is null");
+                        
+                        //Debug.Log("Contract types: " + Contracts.ContractSystem.ContractTypes);
+                        List<Contract> toDelete = new List<Contract>();
+                        List<Contract> toAccept = new List<Contract>();
+                        if (Contracts.ContractSystem.Instance.Contracts != null)
+                        {
+                            foreach (Contract c in Contracts.ContractSystem.Instance.Contracts)
+                            {
+                                //check blocked types
+                                //check blocked bodies
+                                //check blocked strings
+                                //check blocked agents
+                                //check intParams
+                                //check finances
+
+
+                                if (checkForBlockedType(c)) { toDelete.Add(c); }
+                                
+
+                                if (checkForBlockedParameters(c)) { toDelete.Add(c); }
+
+                                if (checkForMaxFundsAdvance(c)) { toDelete.Add(c); }
+                                if (checkForMinFundsAdvance(c)) { toDelete.Add(c); }
+                                if (checkForMinFundsCompletion(c)) { toDelete.Add(c); }
+                                if (checkForMaxFundsCompletion(c)) { toDelete.Add(c); }
+                                if (checkForMinFundsFailure(c)) { toDelete.Add(c); }
+                                if (checkForMaxFundsFailure(c)) { toDelete.Add(c); }
+
+                                if (checkForMinScienceCompletion(c)) { toDelete.Add(c); }
+                                if (checkForMaxScienceCompletion(c)) { toDelete.Add(c); }
+
+
+                                if (checkForMinRepCompletion(c)) { toDelete.Add(c); }
+                                if (checkForMaxRepCompletion(c)) { toDelete.Add(c); }
+                                if (checkForMinRepFailure(c)) { toDelete.Add(c); }
+                                if (checkForMaxRepFailure(c)) { toDelete.Add(c); }
+                                
+
+                                if (checkForBlockedAgent(c)) { toDelete.Add(c); }
+                                if (checkForBlockedMentality(c)) { toDelete.Add(c); }
+
+                                ///*
+                                if (checkForWhitedType(c)) { toAccept.Add(c); }
+                                if (checkForWhitedAgent(c)) { toAccept.Add(c); }
+                                if (checkForWhitedBody(c)) { toAccept.Add(c); }
+                                if (checkForWhitedMentality(c)) { toAccept.Add(c); }
+                                if (checkForWhitedParameter(c)) { toAccept.Add(c); }
+                                if (checkForWhitedPrestiege(c)) { toAccept.Add(c); }
+                                if (checkForWhitedString(c)) { toAccept.Add(c); }
+
+                                if (checkForBlockedStrings(c)) { toDelete.Add(c); }
+                                if (checkForBlockedBody(c)) { toDelete.Add(c); }
+
+                                if (checkForMinParams(c)) { toDelete.Add(c); }
+                                if (checkForMaxParams(c)) { toDelete.Add(c); }
+                                ///*
+                                //*/
+                            }
+                        }
+                        else
+                        {
+                            Debug.Log("Contract System is null");
+                        }
+                        removeBlackedContracts(toDelete);
+                        acceptWhitedContracts(toAccept);
                     }
-                    removeBlackedContracts(toDelete);
-                    acceptWhitedContracts(toAccept);
                 }
             }
         }
@@ -255,50 +275,248 @@ namespace ContractController
             Debug.Log("OnDestroy");
             DestroyButtons();
         }
-        void Save(ConfigNode node)
+        internal void myLoad()
         {
-            PluginConfiguration config = PluginConfiguration.CreateForType<HeadMaster>();
-            config.SetValue("TypePreferences", typeMap);
-            config.SetValue("blockedTypes", blockedTypes);
-            config.save();
+            Debug.Log("Loading");
+
+            //List<Type> blockedTypes = HeadMaster.blockedTypes;
+            //Dictionary<Type, TypePreference> typeMap = HeadMaster.typeMap;
+            //Dictionary<TypePreference, List<String>> typePrefDict = HeadMaster.typePrefDict;
+
+            int progress = -1;
+            Type loadingType = typeMap.Keys.ElementAt(0);
+            //Debug.Log(loadingType);
+            String line = null;
+            //Debug.Log(Type.GetType(loadingType.ToString(), true, true));
+            blockedTypes = new List<Type>();
+            TypePreference tp = TypePreference.getDefaultTypePreference();
+            using (StreamReader file = new StreamReader(KSPUtil.ApplicationRootPath + "/GameData/ContractController/settings.cfg"))
+            {
+                while ((line = file.ReadLine()) != null)
+                {
+                    //Debug.Log(line);
+
+                    
+                    //Debug.Log("Reading: " + line);
+                    if (line.StartsWith("~"))
+                    {
+                        //Debug.Log("BlockedType: " + Type.GetType(line.Substring(1)));
+                        blockedTypes.Add(Type.GetType(line.Substring(1)));
+                    }
+
+                    if (line.StartsWith("*"))
+                    {
+                        progress++;
+                        //Debug.Log(typeMap.Keys.ElementAt(progress).Name);
+                        //Debug.Log(line.Substring(2, line.Length-1));
+                        
+                        //Type.GetType(,)
+                        loadingType = typeMap.Keys.ElementAt(progress);
+                        tp = typeMap[loadingType];
+                    }
+                    if (line.StartsWith("minFA"))
+                    {
+
+                        tp.minFundsAdvance = float.Parse(line.Substring(7));
+                        tp.minFundsAdvanceString = line.Substring(7);
+                    }
+                    else if (line.StartsWith("maxFA"))
+                    {
+                        tp.maxFundsAdvance = float.Parse(line.Substring(7));
+                        tp.maxFundsAdvanceString = line.Substring(7);
+                    }
+                    else if (line.StartsWith("minFC"))
+                    {
+                        tp.minFundsCompletion = float.Parse(line.Substring(7));
+                        tp.minFundsCompleteString = line.Substring(7);
+                    }
+                    else if (line.StartsWith("maxFC"))
+                    {
+                        tp.maxFundsCompletion = float.Parse(line.Substring(7));
+                        tp.maxFundsCompleteString = line.Substring(7);
+                    }
+                    else if (line.StartsWith("minFF"))
+                    {
+                        tp.minFundsFailure = float.Parse(line.Substring(7));
+                        tp.minFundsFailureString = line.Substring(7);
+                    }
+                    else if (line.StartsWith("maxFF"))
+                    {
+                        tp.maxFundsFailure = float.Parse(line.Substring(7));
+                        tp.maxFundsFailureString = line.Substring(7);
+                    }
+                    else if (line.StartsWith("minRC"))
+                    {
+                        tp.minRepCompletion = float.Parse(line.Substring(7));
+                        tp.minRepCompleteString = line.Substring(7);
+                    }
+                    else if (line.StartsWith("maxRC"))
+                    {
+                        tp.maxRepCompletion = float.Parse(line.Substring(7));
+                        tp.maxRepCompleteString = line.Substring(7);
+                    }
+                    else if (line.StartsWith("minRF"))
+                    {
+                        tp.minRepFailure = float.Parse(line.Substring(7));
+                        tp.minRepFailureString = line.Substring(7);
+                    }
+                    else if (line.StartsWith("maxRF"))
+                    {
+                        tp.maxRepFailure = float.Parse(line.Substring(7));
+                        tp.maxRepFailureString = line.Substring(7);
+                    }
+                    else if (line.StartsWith("minSC"))
+                    {
+                        tp.minScienceCompletion = float.Parse(line.Substring(7));
+                        tp.minScienceCompleteString = line.Substring(7);
+                    }
+                    else if (line.StartsWith("maxSC"))
+                    {
+                        tp.maxScienceCompletion = float.Parse(line.Substring(7));
+                        tp.maxScienceCompleteString = line.Substring(7);
+                    }
+                    else if (line.StartsWith("minPar"))
+                    {
+                        tp.minParams = int.Parse(line.Substring(8));
+                        tp.minParamsString = line.Substring(8);
+                    }
+                    else if (line.StartsWith("maxPar"))
+                    {
+                        tp.maxParams = int.Parse(line.Substring(8));
+                        tp.maxParamsString = line.Substring(8);
+                    }
+                    else if (line.StartsWith("minPrstge"))
+                    {
+                        tp.minPrestiege = int.Parse(line.Substring(11));
+                        tp.minPrestiegeString = line.Substring(11);
+                    }
+                    else if (line.StartsWith("maxPrstge"))
+                    {
+                        tp.maxPrestiege = int.Parse(line.Substring(11));
+                        tp.maxPrestiegeString = line.Substring(11);
+                        
+                    }
+                    typeMap[loadingType] = tp;
+                }
+                Debug.Log("Loaded");
+                file.Close();
+                file.Dispose();
+
+            }
+
         }
-        void Load(ConfigNode node)
+        internal void mySave()
         {
-            PluginConfiguration config = PluginConfiguration.CreateForType<HeadMaster>();
-            config.load();
-            typeMap = config.GetValue<Dictionary<Type, TypePreference>>("TypePreferences");
-            blockedTypes = config.GetValue<List<Type>>("blockedTypes");
-        }
+            Debug.Log("Saving");
 
 
+            //could prefix type with char and save as currentLoadingType
+            //
+
+            if (blockedTypes == null)
+            {
+                Debug.Log("blockedTypes is null");
+            }
+            using (System.IO.StreamWriter file = new System.IO.StreamWriter(KSPUtil.ApplicationRootPath + "/GameData/ContractController/settings.cfg", false))
+            {
+                Debug.Log("Writing");
+                //Debug.Log(blockedTypes.Count);
+                file.WriteLine("Blocked Types:");
+                if (blockedTypes != null && blockedTypes.Count > 0)
+                {
+                    foreach (Type t in blockedTypes)
+                    {
+                        file.WriteLine("~" + t.Name);
+                    }
+                }
+
+                file.WriteLine("---");
+                //TypePreferences
+                file.WriteLine("Type Preferences: ");
+                int counter = 0;
+                foreach (Type t in typeMap.Keys)
+                {
+                    file.WriteLine("*"+t.Name);
+                    ///*
+                    if (blockedTypes.Contains(t))
+                    {
+                        file.WriteLine("Blocked: true");
+                    }
+                    else
+                    {
+                        file.WriteLine("Blocked: false");
+                    }
+                    /*
+                    foreach (String s in typePrefDict[typeMap[t]])
+                    {
+                        file.WriteLine(s);
+                    }
+                    */
+                    ///*
+                    TypePreference tp = typeMap[t];
+                    file.WriteLine("minFA: " + tp.minFundsAdvance);
+                    file.WriteLine("maxFA: " + tp.maxFundsAdvance);
+                    file.WriteLine("minFC: " + tp.minFundsCompletion);
+                    file.WriteLine("maxFC: " + tp.maxFundsCompletion);
+                    file.WriteLine("minFF: " + tp.minFundsFailure);
+                    file.WriteLine("maxFF: " + tp.maxFundsFailure);
+                    file.WriteLine("minRC: " + tp.minRepCompletion);
+                    file.WriteLine("maxRC: " + tp.maxRepCompletion);
+                    file.WriteLine("minRF: " + tp.minRepFailure);
+                    file.WriteLine("maxRF: " + tp.maxRepFailure);
+                    file.WriteLine("minSC: " + tp.minScienceCompletion);
+                    file.WriteLine("maxSC: " + tp.maxScienceCompletion);
+                    file.WriteLine("minPar: " + tp.minParams);
+                    file.WriteLine("maxPar: " + tp.maxParams);
+                    file.WriteLine("minPrstge: " + tp.minPrestiege);
+                    file.WriteLine("maxPrstge: " + tp.maxPrestiege);
+                    //*/
+
+                }
+
+                file.WriteLine("---");
+                Debug.Log("Saved");
+                file.Close();
+            }
+        }
         void OnGUI()
         {
             if (showGUI)
             {
-                mainGUI = GUI.Window(mainGUID, mainGUI, mainGUIWindow, "Contract Controller~");
-                if (showtypeprefeditor)
+                if (ContractSystem.Instance.isActiveAndEnabled && ContractSystem.Instance != null)
                 {
-                    Rect rect = new Rect(mainGUI.right, mainGUI.top, 250, 475);
-                    rect = GUI.Window(prefEditGUID, rect, editTypePrefGUI, "" + editingType.Name + "~");
+                    mainGUI = GUI.Window(mainGUID, mainGUI, mainGUIWindow, "Contract Controller~");
+                    if (showtypeprefeditor)
+                    {
+                        Rect rect = new Rect(mainGUI.right, mainGUI.top, 250, 475);
+                        rect = GUI.Window(prefEditGUID, rect, editTypePrefGUI, "" + editingType.Name + "~");
 
-                    if (showParameterChangeGUI)
-                    {
-                        showAutoParamGUI = false;
-                        Rect rect1 = new Rect(rect.right, rect.top, 250, 300);
-                        rect1 = GUI.Window(parameterGuid, rect1, changeParameterGUI, "Parameter List~");
-                        Rect rect2 = new Rect(rect.right, rect.top + rect.height - 160, 250, 300);
-                        rect2 = GUI.Window(parameterListGuid, rect2, parameterListGUI, "Blacklisted Parameters~");
-                    }
-                    if (showAutoParamGUI)
-                    {
-                        showParameterChangeGUI = false;
-                        Rect rect1 = new Rect(rect.right, rect.top, 250, 300);
-                        rect1 = GUI.Window(autoParameterGuid, rect1, autoParameterListGUI, "Auto-Parameter List~");
-                        Rect rect2 = new Rect(rect.right, rect.top + rect.height - 170, 250, 300);
-                        rect2 = GUI.Window(autoParameterListGuid, rect2, autoListParameterGUI, "AutoParameters~");
+                        if (showParameterChangeGUI)
+                        {
+                            showAutoParamGUI = false;
+                            Rect rect1 = new Rect(rect.right, rect.top, 250, 300);
+                            rect1 = GUI.Window(parameterGuid, rect1, changeParameterGUI, "Parameter List~");
+                            Rect rect2 = new Rect(rect.right, rect.top + rect.height - 190, 250, 300);
+                            rect2 = GUI.Window(parameterListGuid, rect2, parameterListGUI, "Blacklisted Parameters~");
+                        }
+                        if (showAutoParamGUI)
+                        {
+                            showParameterChangeGUI = false;
+                            Rect rect1 = new Rect(rect.right, rect.top, 250, 300);
+                            rect1 = GUI.Window(autoParameterGuid, rect1, autoParameterListGUI, "Auto-Parameter List~");
+                            Rect rect2 = new Rect(rect.right, rect.top + rect.height - 190, 250, 300);
+                            rect2 = GUI.Window(autoParameterListGuid, rect2, autoListParameterGUI, "AutoParameters~");
+                        }
+                        if(showBodyBlacklistGUI)
+                        {
+                            showParameterChangeGUI = false;
+                            Rect rect1 = new Rect(rect.right, rect.top, 250, 300);
+                            rect1 = GUI.Window(bodyGuid, rect1, bodyBlacklistGUI, "Body List~");
+                            Rect rect2 = new Rect(rect.right, rect.top + rect.height - 190, 250, 300);
+                            rect2 = GUI.Window(bodyListGuid, rect2, userBodyBlackListGUI, "Blacklisted Bodies~");
+                        }
                     }
                 }
-                
             }
             
             
@@ -306,200 +524,244 @@ namespace ContractController
         }
         public void mainGUIWindow(int windowID)
         {
-            //float value = 100;
-            //value = GUILayout.VerticalScrollbar(value, 5, 100, 0);
-            GUILayout.Label("Choose the contract type you want to edit:");
-            scrollPosition = GUILayout.BeginScrollView(scrollPosition, GUILayout.Width(175), GUILayout.Height(500));
-            //mainGUI.position = scrollPosition;
+            if (ContractSystem.Instance.isActiveAndEnabled && ContractSystem.Instance != null)
+            {
+                //float value = 100;
+                //value = GUILayout.VerticalScrollbar(value, 5, 100, 0);
+                GUILayout.Label("Choose the contract type you want to edit:");
+                scrollPosition = GUILayout.BeginScrollView(scrollPosition, GUILayout.Width(175), GUILayout.Height(375));
+                //mainGUI.position = scrollPosition;
 
-            foreach (Type t in Contracts.ContractSystem.ContractTypes)
-            {
-                if (GUILayout.Button(t.Name))
+                foreach (Type t in Contracts.ContractSystem.ContractTypes)
                 {
-                    editingType = t;
-                    showtypeprefeditor = true;
-                    showParameterChangeGUI = false;
-                    showParameterListGUI = false;
-                    showAutoParamGUI = false;
-                }
+                    if (GUILayout.Button(t.Name))
+                    {
+                        editingType = t;
+                        showtypeprefeditor = true;
+                        showParameterChangeGUI = false;
+                        showParameterListGUI = false;
+                        showAutoParamGUI = false;
+                    }
 
-            }
-            GUILayout.EndScrollView();
-            if(isSorting)
-            {
-                if (GUILayout.Button("Stop Sorting"))
+                }
+                GUILayout.EndScrollView();
+                if (isSorting)
                 {
-                    isSorting = false;
+                    if (GUILayout.Button("Stop Sorting"))
+                    {
+                        isSorting = false;
+                    }
+                }
+                else
+                {
+                    if (GUILayout.Button("Start Sorting"))
+                    {
+                        isSorting = true;
+                    }
+                }
+                GUILayout.BeginHorizontal();
+                if (GUILayout.Button("Save"))
+                {
+                    mySave();
+                }
+                if (GUILayout.Button("Load"))
+                {
+                    myLoad();
+                }
+                GUILayout.EndHorizontal();
+                if (GUILayout.Button("Close"))
+                {
+                    showGUI = false;
                 }
             }
-            else
-            {
-                if (GUILayout.Button("Start Sorting"))
-                {
-                    isSorting = true;
-                }
-            }
-            
-            if(GUILayout.Button("Close"))
-            {
-                showGUI = false;
-            }
-            
-
+           
             GUI.DragWindow();
         }
 
         public void editTypePrefGUI(int windowID)
         {
-            //minFunds
-            TypePreference tp = typeMap[editingType];
-            //Debug.Log("Editing type: " + editingType.Name);
-            //maxFunds
-            GUILayout.BeginVertical();
-            scrollPosition2 = GUILayout.BeginScrollView(scrollPosition2, GUILayout.Width(235), GUILayout.Height(250));
-            //mainGUI.position = scrollPosition;
-
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("minFundsAdvance:");
-            typePrefDict[tp][0] = GUILayout.TextField(typePrefDict[tp][0]);
-            GUILayout.EndHorizontal();
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("maxFundsAdvance:");
-            typePrefDict[tp][1] = GUILayout.TextField(typePrefDict[tp][1]);
-            GUILayout.EndHorizontal();
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("minFundsComplete:");
-            typePrefDict[tp][2] = GUILayout.TextField(typePrefDict[tp][2]);
-            GUILayout.EndHorizontal();
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("maxFundsComplete:");
-            typePrefDict[tp][3] = GUILayout.TextField(typePrefDict[tp][3]);
-            GUILayout.EndHorizontal();
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("minFundsFailure:");
-            typePrefDict[tp][4] = GUILayout.TextField(typePrefDict[tp][4]);
-            GUILayout.EndHorizontal();
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("maxFundsFailure:");
-            typePrefDict[tp][5] = GUILayout.TextField(typePrefDict[tp][5]);
-            GUILayout.EndHorizontal();
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("minRepComplete:");
-            typePrefDict[tp][6] = GUILayout.TextField(typePrefDict[tp][6]);
-            GUILayout.EndHorizontal();
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("maxRepComplete:");
-            typePrefDict[tp][7] = GUILayout.TextField(typePrefDict[tp][7]);
-            GUILayout.EndHorizontal();
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("minRepFailure:");
-            typePrefDict[tp][8] = GUILayout.TextField(typePrefDict[tp][8]);
-            GUILayout.EndHorizontal();
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("maxRepFailure:");
-            typePrefDict[tp][9] = GUILayout.TextField(typePrefDict[tp][9]);
-            GUILayout.EndHorizontal();
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("minScienceComplete:");
-            typePrefDict[tp][10] = GUILayout.TextField(typePrefDict[tp][10]);
-            GUILayout.EndHorizontal();
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("maxScienceComplete:");
-            typePrefDict[tp][11] = GUILayout.TextField(typePrefDict[tp][11]);
-            GUILayout.EndHorizontal();
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("minParameters:");
-            typePrefDict[tp][12] = GUILayout.TextField(typePrefDict[tp][12]);
-            GUILayout.EndHorizontal();
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("maxParameters:");
-            typePrefDict[tp][13] = GUILayout.TextField(typePrefDict[tp][13]);
-            GUILayout.EndHorizontal();
-
-
-            GUILayout.EndScrollView();
-
-
-
-            GUILayout.EndVertical();
-            if (blockedTypes.Contains(editingType))
+            if (ContractSystem.Instance.isActiveAndEnabled && ContractSystem.Instance != null)
             {
-                if (GUILayout.Button("Accept Type"))
-                {
-                    blockedTypes.Remove(editingType);
-                }
-            }
-            else
-            {
-                if (GUILayout.Button("Reject Type"))
-                {
-                    blockedTypes.Add(editingType);
-                }
-            }
-            if (GUILayout.Button("Blacklist Parameters"))
-            {
-                showParameterChangeGUI = !showParameterChangeGUI;
-                showParameterListGUI = !showParameterListGUI;
-            }
-            if(GUILayout.Button("AutoAccept Parameters"))
-            {
-                showAutoParamGUI = !showAutoParamGUI;
+                //minFunds
                 
-            }
-            if(GUILayout.Button("Blacklist Bodies"))
-            {
+                //Debug.Log(editingType);
+                
+                TypePreference tp = typeMap[editingType];
+                
+                //maxFunds
+                GUILayout.BeginVertical();
+                scrollPosition2 = GUILayout.BeginScrollView(scrollPosition2, GUILayout.Width(235), GUILayout.Height(250));
+                //mainGUI.position = scrollPosition;
+                //Debug.Log("2");
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("minFundsAdvance:");
+                //minFundsAdvance = tp.minFundsAdvance.ToString();
+                tp.minFundsAdvanceString = GUILayout.TextField(tp.minFundsAdvanceString);
+                //tp.minFundsAdvance = float.Parse(minFundsAdvance);
+                //typePrefDict[tp][0] = GUILayout.TextField(typePrefDict[tp][0]); //this fucks up
+                GUILayout.EndHorizontal();
+                //Debug.Log("3");
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("maxFundsAdvance:");
+                tp.maxFundsAdvanceString = GUILayout.TextField(tp.maxFundsAdvanceString);
+                //tp.maxFundsAdvance = float.Parse(GUILayout.TextField(tp.maxFundsAdvance.ToString()));
+                GUILayout.EndHorizontal();;
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("minFundsComplete:");
+                tp.minFundsCompleteString = GUILayout.TextField(tp.minFundsCompleteString);
+                //tp.minFundsCompletion = float.Parse(GUILayout.TextField(tp.minFundsCompletion.ToString()));
+                GUILayout.EndHorizontal();
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("maxFundsComplete:");
+                tp.maxFundsCompleteString = GUILayout.TextField(tp.maxFundsCompleteString);
+                //tp.maxFundsCompletion = float.Parse(GUILayout.TextField(tp.maxFundsCompletion.ToString()));
+                GUILayout.EndHorizontal();
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("minFundsFailure:");
+                tp.minFundsFailureString = GUILayout.TextField(tp.minFundsFailureString);
+                //tp.minFundsFailure = float.Parse(GUILayout.TextField(tp.minFundsFailure.ToString()));
+                GUILayout.EndHorizontal();
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("maxFundsFailure:");
+                tp.maxFundsFailureString = GUILayout.TextField(tp.maxFundsFailureString);
+                //tp.maxFundsFailure = float.Parse(GUILayout.TextField(tp.maxFundsFailure.ToString()));
+                GUILayout.EndHorizontal();
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("minRepComplete:");
+                tp.minRepCompleteString = GUILayout.TextField(tp.minRepCompleteString);
+                //tp.minRepCompletion = float.Parse(GUILayout.TextField(tp.minRepCompletion.ToString()));
+                GUILayout.EndHorizontal();
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("maxRepComplete:");
+                tp.maxRepCompleteString = GUILayout.TextField(tp.maxRepCompleteString);
+                //tp.maxRepCompletion = float.Parse(GUILayout.TextField(tp.maxRepCompletion.ToString()));
+                GUILayout.EndHorizontal();
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("minRepFailure:");
+                tp.minRepFailureString = GUILayout.TextField(tp.minRepFailureString);
+                //tp.minRepFailure = float.Parse(GUILayout.TextField(tp.minRepFailure.ToString()));
+                GUILayout.EndHorizontal();
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("maxRepFailure:");
+                tp.maxRepFailureString = GUILayout.TextField(tp.maxRepFailureString);
+                //tp.maxRepFailure = float.Parse(GUILayout.TextField(tp.maxRepFailure.ToString()));
+                GUILayout.EndHorizontal();
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("minScienceComplete:");
+                tp.minScienceCompleteString = GUILayout.TextField(tp.minScienceCompleteString);
+                //tp.minScienceCompletion = float.Parse(GUILayout.TextField(tp.minScienceCompletion.ToString()));
+                GUILayout.EndHorizontal();
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("maxScienceComplete:");
+                tp.maxScienceCompleteString = GUILayout.TextField(tp.maxScienceCompleteString);
+                //tp.maxScienceCompletion = float.Parse(GUILayout.TextField(tp.maxScienceCompletion.ToString()));
+                GUILayout.EndHorizontal();
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("minParameters:");
+                tp.minParamsString = GUILayout.TextField(tp.minParamsString);
+                //tp.minParams = int.Parse(GUILayout.TextField(tp.minParams.ToString()));
+                GUILayout.EndHorizontal();
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("maxParameters:");
+                tp.maxParamsString = GUILayout.TextField(tp.maxParamsString);
+                //tp.maxParams = int.Parse(GUILayout.TextField(tp.maxParams.ToString()));
+                GUILayout.EndHorizontal();
 
-            }
-            if(GUILayout.Button("AutoAccept Bodies"))
-            {
+                //Note: have in-scope strings which convert to float/int, as the above doesn't work
+                GUILayout.EndScrollView();
 
-            }
-            if(GUILayout.Button("Blacklist Strings"))
-            {
+                typeMap[editingType] = tp;
+                GUILayout.EndVertical();
+                if (blockedTypes.Contains(editingType))
+                {
+                    if (GUILayout.Button("Accept Type"))
+                    {
+                        blockedTypes.Remove(editingType);
+                    }
+                }
+                else
+                {
+                    if (GUILayout.Button("Reject Type"))
+                    {
+                        blockedTypes.Add(editingType);
+                    }
+                }
+                if (GUILayout.Button("Blacklist Parameters"))
+                {
+                    showParameterChangeGUI = !showParameterChangeGUI;
+                    showParameterListGUI = !showParameterListGUI;
+                }
+                if (GUILayout.Button("AutoAccept Parameters"))
+                {
+                    showAutoParamGUI = !showAutoParamGUI;
+
+                }
+                if (GUILayout.Button("Blacklist Bodies"))
+                {
+                    showBodyBlacklistGUI = !showBodyBlacklistGUI;
+                }
+                if (GUILayout.Button("AutoAccept Bodies"))
+                {
+                    
+                }
+                if (GUILayout.Button("Blacklist Strings"))
+                {
+
+                }
+                if(GUILayout.Button("AutoAccept Strings"))
+                {
+
+                }
+
+                if (GUILayout.Button("Save"))
+                {
+                    try
+                    {
+                        //Debug.Log(typePrefDict.Count);
+                        //Debug.Log(typePrefDict[typeMap[editingType]].Count);
+                        ///*
+                        //TypePreference tp1 = typeMap[editingType];
+                        tp.minFundsAdvance = float.Parse(tp.minFundsAdvanceString);
+                        Debug.Log("saving: " + tp.minFundsAdvance);
+                        tp.maxFundsAdvance = float.Parse(tp.maxFundsAdvanceString);
+                        tp.minFundsCompletion = float.Parse(tp.minFundsCompleteString);
+                        tp.maxFundsCompletion = float.Parse(tp.maxFundsCompleteString);
+                        tp.minFundsFailure = float.Parse(tp.minFundsFailureString);
+                        tp.maxFundsFailure = float.Parse(tp.maxFundsFailureString);
+
+                        tp.minRepCompletion = float.Parse(tp.minRepCompleteString);
+                        tp.maxRepCompletion = float.Parse(tp.maxRepCompleteString);
+                        tp.minRepFailure = float.Parse(tp.minRepFailureString);
+                        tp.maxRepFailure = float.Parse(tp.maxRepFailureString);
+
+                        tp.minScienceCompletion = float.Parse(tp.minScienceCompleteString);
+                        tp.maxScienceCompletion = float.Parse(tp.maxScienceCompleteString);
+
+                        tp.minParams = int.Parse(tp.minParamsString);
+                        tp.maxParams = int.Parse(tp.maxParamsString);
+                        tp.minPrestiege = int.Parse(tp.minPrestiegeString);
+                        tp.maxPrestiege = int.Parse(tp.maxPrestiegeString);
+
+                        typeMap[editingType] = tp;
+                        //tp = tp1;
+                        //*/
+                        //Debug.Log(tp.minFundsCompletion);
+                        Debug.Log("Settings Saved");
+                    }
+                    catch (Exception e)
+                    {
+                        
+                    }
+
+                }
+
+                if (GUILayout.Button("Close"))
+                {
+                    showtypeprefeditor = false;
+                }
 
             }
             
-
-            if (GUILayout.Button("Save"))
-            {
-                try
-                {
-                    //Debug.Log(typePrefDict.Count);
-                    //Debug.Log(typePrefDict[typeMap[editingType]].Count);
-                    TypePreference tp1 = typeMap[editingType];
-                    tp1.minFundsAdvance = float.Parse(typePrefDict[tp][0]);
-                    tp1.maxFundsAdvance = float.Parse(typePrefDict[tp][1]);
-                    tp1.minFundsCompletion = float.Parse(typePrefDict[tp][2]);
-                    tp1.maxFundsCompletion = float.Parse(typePrefDict[tp][3]);
-                    tp1.minFundsFailure = float.Parse(typePrefDict[tp][4]);
-                    tp1.maxFundsFailure = float.Parse(typePrefDict[tp][5]);
-
-                    tp1.minRepCompletion = float.Parse(typePrefDict[tp][6]);
-                    tp1.maxRepCompletion = float.Parse(typePrefDict[tp][7]);
-                    tp1.minRepFailure = float.Parse(typePrefDict[tp][8]);
-                    tp1.maxRepFailure = float.Parse(typePrefDict[tp][9]);
-
-                    tp1.minScienceCompletion = float.Parse(typePrefDict[tp][10]);
-                    tp1.maxScienceCompletion = float.Parse(typePrefDict[tp][11]);
-
-                    tp1.minParams = int.Parse(typePrefDict[tp][12]);
-                    tp1.maxParams = int.Parse(typePrefDict[tp][13]);
-                    tp1.minPrestiege = int.Parse(typePrefDict[tp][14]);
-                    tp1.maxPrestiege = int.Parse(typePrefDict[tp][15]);
-
-                    tp = tp1;
-                    Debug.Log("Settings Saved");
-                }
-                catch(Exception e)
-                {
-                    Debug.Log("numb: " + typePrefDict[tp].Count);
-                }
-                
-            }
-            if (GUILayout.Button("Close"))
-            {
-                showtypeprefeditor = false;
-            }
         }
         public void changeParameterGUI(int windowID)
         {
@@ -580,7 +842,8 @@ namespace ContractController
         public void autoListParameterGUI(int windowID)
         {
             TypePreference tp = typeMap[editingType];
-            List<Type> bloop = tp.autoParameters;
+            List<Type> bloop = new List<Type>();
+            bloop = tp.autoParameters;
 
             scrollPosition4 = GUILayout.BeginScrollView(scrollPosition4, GUILayout.Width(235), GUILayout.Height(290));
             foreach (Type cp in bloop)
@@ -601,44 +864,70 @@ namespace ContractController
             GUILayout.EndScrollView();
 
         }
+        public void bodyBlacklistGUI(int windowId)
+        {
+            GUILayout.Label("boop");
+            TypePreference tp = typeMap[editingType];
+            scrollPosition5 = GUILayout.BeginScrollView(scrollPosition5, GUILayout.Width(235), GUILayout.Height(290));
+            foreach(CelestialBody body in FlightGlobals.Bodies)
+            {
+                if(!tp.blockedBodies.Contains(body.name))
+                {
+                    if(GUILayout.Button(body.name))
+                    {
+                        tp.blockedBodies.Add(body.name);
+                    }
+                }
+            }
+            GUILayout.EndScrollView();
+        }
+        public void userBodyBlackListGUI(int windowID)
+        {
+            scrollPosition6 = GUILayout.BeginScrollView(scrollPosition6, GUILayout.Width(235), GUILayout.Height(290));
+            TypePreference tp = typeMap[editingType];
+            List<String> list = tp.blockedBodies;
+            foreach(String s in list)
+            {
+                if(GUILayout.Button(s))
+                {
+                    try
+                    {
+                        tp.blockedBodies.Remove(s);
+                    }
+                    catch(Exception e)
+                    {
+
+                    }
+                    
+                }
+            }
+            GUILayout.EndScrollView();
+        }
+        public void autoBodyListGUI(int windowId)
+        {
+            GUILayout.Label("boop");
+        }
+        public void userAutoBodyListGUI(int windowID)
+        {
+
+        }
         public void initTypePreferences()
         {
             Debug.Log("Initing type preferences");
+            //typeMap = new Dictionary<Type, TypePreference>();
+            
             if (ContractSystem.ContractTypes != null)
             {
                 foreach (Type t in ContractSystem.ContractTypes)
                 {
                     Debug.Log("Adding Type: " + t.Name);
                     TypePreference tp = TypePreference.getDefaultTypePreference();
-                    
-                    List<String> stringList = new List<string>();
-
-                    stringList.Add(minFundsAdvance);
-                    stringList.Add(maxFundsAdvance);
-                    stringList.Add(minFundsComplete);
-                    stringList.Add(maxFundsComplete);
-                    stringList.Add(minFundsFailure);
-                    stringList.Add(maxFundsFailure);
-
-                    stringList.Add(minRepComplete);
-                    stringList.Add(maxRepComplete);
-                    stringList.Add(minRepFailure);
-                    stringList.Add(maxRepFailure);
-
-                    stringList.Add(minScienceComplete);
-                    stringList.Add(maxScienceComplete);
-
-                    stringList.Add(minParams);
-                    stringList.Add(maxParams);
-                    stringList.Add(minPrestiege);
-                    stringList.Add(maxPrestiege);
-                    typePrefDict.Add(tp, stringList);
                     typeMap.Add(t, tp);
                 }
             }
             inited = true;
         }
-
+        
         ///////////////////////////////////////////////
 
         public bool checkForMinFundsAdvance(Contract c)
@@ -769,7 +1058,7 @@ namespace ContractController
         {
             Type t = c.GetType();
             TypePreference tp = typeMap[t];
-            if (c.ReputationCompletion > tp.minRepFailure)
+            if (c.ReputationCompletion > tp.maxRepFailure)
             {
                 return true;
             }
@@ -788,25 +1077,12 @@ namespace ContractController
             TypePreference tp = typeMap[t];
             foreach (String s in tp.blockedBodies)
             {
-                if (c.Description.Contains(s))
-                {
-                    return true;
-                }
-                if (c.Synopsys.Contains(s))
-                {
-                    return true;
-                }
+                
                 if (c.Title.Contains(s))
                 {
                     return true;
                 }
-                foreach (String wurd in c.Keywords)
-                {
-                    if (wurd.Contains(s))
-                    {
-                        return true;
-                    }
-                }
+                
             }
 
             return false;

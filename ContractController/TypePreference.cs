@@ -38,6 +38,28 @@ namespace ContractController
         public float maxFundsFailure;
         public float maxRepFailure;
 
+
+        public String minFundsAdvanceString;
+        public String maxFundsAdvanceString;
+        public String minFundsCompleteString;
+        public String maxFundsCompleteString;
+        public String minFundsFailureString;
+        public String maxFundsFailureString;
+
+        public String minRepCompleteString;
+        public String maxRepCompleteString;
+        public String minRepFailureString;
+        public String maxRepFailureString;
+
+        public String minScienceCompleteString;
+        public String maxScienceCompleteString;
+
+        public String minParamsString;
+        public String maxParamsString;
+        public String minPrestiegeString;
+        public String maxPrestiegeString;
+
+
         
         public List<String> blockedStrings;
         public List<String> blockedBodies;
@@ -79,6 +101,26 @@ namespace ContractController
 
             tp.maxFundsFailure = 100000;
             tp.maxRepFailure = 10000;
+
+            tp.minFundsAdvanceString = "0";
+            tp.maxFundsAdvanceString = "1000000";
+            tp.minFundsCompleteString = "0";
+            tp.maxFundsCompleteString = "1000000";
+            tp.minFundsFailureString = "0";
+            tp.maxFundsFailureString = "100000";
+
+            tp.minRepCompleteString = "0";
+            tp.maxRepCompleteString = "1000";
+            tp.minRepFailureString = "0";
+            tp.maxRepFailureString = "10000";
+
+            tp.minScienceCompleteString = "0";
+            tp.maxScienceCompleteString = "1000";
+
+            tp.minParamsString = "1";
+            tp.maxParamsString = "20";
+            tp.minPrestiegeString = "0";
+            tp.maxPrestiegeString = "3";
 
             tp.blockedStrings = new List<string>();
             tp.blockedBodies = new List<string>();
