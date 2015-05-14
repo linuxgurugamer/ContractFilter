@@ -26,7 +26,7 @@ namespace ContractController
         //Per-type blocks and prefers
 
         ApplicationLauncherButton CCButton = null;
-        private Rect mainGUI = new Rect(100, 100, 250, 575);
+        private Rect mainGUI = new Rect(100, 100, 250, 625);
 
         private bool showGUI = true;
         int mainGUID;
@@ -44,6 +44,20 @@ namespace ContractController
         int autoStringGuid;
         int autoStringListGuid;
 
+        int editAllGuid;
+        int allparameterGuid;
+        int allparameterListGuid;
+        int allautoParameterGuid;
+        int allautoParameterListGuid;
+        int allbodyGuid;
+        int allbodyListGuid;
+        int allautoBodyGuid;
+        int allautoBodyListGuid;
+        int allstringGuid;
+        int allstringListGuid;
+        int allautoStringGuid;
+        int allautoStringListGuid;
+
         Vector2 scrollPosition;
         Vector2 scrollPosition2;
         Vector2 scrollPosition3;
@@ -54,6 +68,17 @@ namespace ContractController
         Vector2 scrollPosition8;
         Vector2 scrollPosition9;
         Vector2 scrollPosition10;
+        Vector2 scrollPosition11;
+        Vector2 scrollPosition12;
+        Vector2 scrollPosition13;
+        Vector2 scrollPosition14;
+        Vector2 scrollPosition15;
+        Vector2 scrollPosition16;
+        Vector2 scrollPosition17;
+        Vector2 scrollPosition18;
+        Vector2 scrollPosition19;
+        Vector2 scrollPosition20;
+        Vector2 scrollPosition21;
 
         Type editingType;
 
@@ -69,6 +94,42 @@ namespace ContractController
         bool showStringBlacklistGUI = false;
         bool showStringWhitelistGUI = false;
 
+        bool showAllParameterChangeGUI = false;
+        bool showAllParameterListGUI = false;
+        bool showAllAutoParamGUI = false;
+        bool showAllBodyBlacklistGUI = false;
+        bool showAllBodyAutoListGUI = false;
+        bool showAllStringBlacklistGUI = false;
+        bool showAllStringWhitelistGUI = false;
+
+        public String minFundsAdvanceString = "0";
+        public String maxFundsAdvanceString = "100000";
+        public String minFundsCompleteString = "0";
+        public String maxFundsCompleteString = "100000";
+        public String minFundsFailureString = "0";
+        public String maxFundsFailureString = "100000";
+
+        public String minRepCompleteString = "0";
+        public String maxRepCompleteString = "100000";
+        public String minRepFailureString = "0";
+        public String maxRepFailureString = "100000";
+
+        public String minScienceCompleteString = "0";
+        public String maxScienceCompleteString = "100000";
+
+        public String minParamsString = "0";
+        public String maxParamsString = "20";
+        public String minPrestiegeString = "0";
+        public String maxPrestiegeString = "2";
+
+        List<Type> blockedParams = new List<Type>();
+        List<Type> whiteParams = new List<Type>();
+        List<String> blackBodies = new List<String>();
+        List<String> whiteBodies = new List<String>();
+        List<String> blackStrings = new List<String>();
+        List<String> whiteStrings = new List<String>();
+
+        bool showEditAllGUI;
 
         String statusString = "";
         double timeTillIdle = 15000;
@@ -86,7 +147,7 @@ namespace ContractController
 
         void Awake()
         {
-            
+
             DontDestroyOnLoad(this);
             Debug.Log("*yawn* I'm awake");
             mainGUID = Guid.NewGuid().GetHashCode();
@@ -103,12 +164,26 @@ namespace ContractController
             stringListGuid = Guid.NewGuid().GetHashCode();
             autoStringGuid = Guid.NewGuid().GetHashCode();
             autoStringListGuid = Guid.NewGuid().GetHashCode();
+            editAllGuid = Guid.NewGuid().GetHashCode();
+
+            allparameterGuid = Guid.NewGuid().GetHashCode();
+            allparameterListGuid = Guid.NewGuid().GetHashCode();
+            allautoParameterGuid = Guid.NewGuid().GetHashCode();
+            allautoParameterListGuid = Guid.NewGuid().GetHashCode();
+            allbodyGuid = Guid.NewGuid().GetHashCode();
+            allbodyListGuid = Guid.NewGuid().GetHashCode();
+            allautoBodyGuid = Guid.NewGuid().GetHashCode();
+            allautoBodyListGuid = Guid.NewGuid().GetHashCode();
+            allstringGuid = Guid.NewGuid().GetHashCode();
+            allstringListGuid = Guid.NewGuid().GetHashCode();
+            allautoStringGuid = Guid.NewGuid().GetHashCode();
+            allautoStringListGuid = Guid.NewGuid().GetHashCode();
             //Debug.Log("Active+Enabled?: " + ContractSystem.Instance.isActiveAndEnabled);
             //done = false;
 
             if (buttonNeedsInit && HighLogic.LoadedScene == GameScenes.SPACECENTER)
             {
-                
+
                 Debug.Log("Initing buttons");
                 InitButtons();
             }
@@ -162,7 +237,7 @@ namespace ContractController
                                 //check blocked agents
                                 //check intParams
                                 //check finances
-                                
+
 
                                 if (checkForBlockedType(c)) { toDelete.Add(c); }
 
@@ -215,7 +290,7 @@ namespace ContractController
                         acceptWhitedContracts(toAccept);
                     }
                 }
-                if(idleWatch.ElapsedMilliseconds >= 25000 && !isSorting)
+                if (idleWatch.ElapsedMilliseconds >= 25000 && !isSorting)
                 {
                     statusString = "Idling";
                 }
@@ -223,13 +298,13 @@ namespace ContractController
             else
             {
                 showGUI = false;
-                
+
             }
         }
         void OnAppButtonReady()
         {
             //Note: do tracking station check
-            if(HighLogic.LoadedScene == GameScenes.SPACECENTER && CCButton == null)
+            if (HighLogic.LoadedScene == GameScenes.SPACECENTER && CCButton == null)
             {
                 Debug.Log("App launcher Ready");
                 if (ApplicationLauncher.Ready)
@@ -246,17 +321,17 @@ namespace ContractController
                         (Texture)GameDatabase.Instance.GetTexture("ContractFilter/Textures/appButton", false));
                 }
             }
-            
+
         }
 
         private void ShowGUI()
         {
             Debug.Log("ShowGUI");
-            if(HighLogic.LoadedScene == GameScenes.SPACECENTER)
+            if (HighLogic.LoadedScene == GameScenes.SPACECENTER)
             {
                 showGUI = true;
             }
-            
+
         }
 
         private void HideGUI()
@@ -272,18 +347,18 @@ namespace ContractController
 
         void OnAppLaunchToggleOn()
         {
-            if(HighLogic.LoadedScene == GameScenes.SPACECENTER)
+            if (HighLogic.LoadedScene == GameScenes.SPACECENTER)
             {
                 showGUI = true;
             }
-            
+
         }
 
         void DummyVoid() { }
 
         void InitButtons()
         {
-            if(HighLogic.LoadedScene == GameScenes.SPACECENTER)
+            if (HighLogic.LoadedScene == GameScenes.SPACECENTER)
             {
                 Debug.Log("Init Buttons");
                 if (CCButton == null)
@@ -301,7 +376,7 @@ namespace ContractController
 
                 buttonNeedsInit = false;
             }
-            
+
         }
 
         void DestroyButtons()
@@ -447,7 +522,11 @@ namespace ContractController
                         }
                         else if (line.StartsWith("`"))
                         { //black body
-                            tp.blockedBodies.Add(line.Substring(1));
+                            if(!tp.blockedBodies.Contains(line.Substring(1)))
+                            {
+                                tp.blockedBodies.Add(line.Substring(1));
+                            }
+                            
                         }
                         else if (line.StartsWith("!"))
                         {
@@ -469,11 +548,11 @@ namespace ContractController
                     statusString = "Loaded!";
                 }
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 statusString = "Load Failed!";
             }
-            
+
 
         }
         internal void mySave()
@@ -573,11 +652,11 @@ namespace ContractController
                     file.Close();
                 }
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 statusString = "Save failed!";
             }
-            
+
         }
         void OnGUI()
         {
@@ -600,6 +679,7 @@ namespace ContractController
                             showParameterListGUI = false;
                             showStringBlacklistGUI = false;
                             showStringWhitelistGUI = false;
+                            showEditAllGUI = false;
                             Rect rect1 = new Rect(rect.right, rect.top, 250, 300);
                             rect1 = GUI.Window(parameterGuid, rect1, changeParameterGUI, "Parameter List~");
                             Rect rect2 = new Rect(rect.right, rect.top + rect.height - 185, 250, 300);
@@ -615,6 +695,7 @@ namespace ContractController
                             showParameterListGUI = false;
                             showStringBlacklistGUI = false;
                             showStringWhitelistGUI = false;
+                            showEditAllGUI = false;
                             Rect rect1 = new Rect(rect.right, rect.top, 250, 300);
                             rect1 = GUI.Window(autoParameterGuid, rect1, autoParameterListGUI, "Auto-Parameter List~");
                             Rect rect2 = new Rect(rect.right, rect.top + rect.height - 185, 250, 300);
@@ -629,6 +710,7 @@ namespace ContractController
                             showParameterListGUI = false;
                             showStringBlacklistGUI = false;
                             showStringWhitelistGUI = false;
+                            showEditAllGUI = false;
                             Rect rect1 = new Rect(rect.right, rect.top, 250, 300);
                             rect1 = GUI.Window(bodyGuid, rect1, bodyBlacklistGUI, "Body List~");
                             Rect rect2 = new Rect(rect.right, rect.top + rect.height - 185, 250, 300);
@@ -643,6 +725,7 @@ namespace ContractController
                             showParameterListGUI = false;
                             showStringBlacklistGUI = false;
                             showStringWhitelistGUI = false;
+                            showEditAllGUI = false;
                             Rect rect1 = new Rect(rect.right, rect.top, 250, 300);
                             rect1 = GUI.Window(autoBodyGuid, rect1, autoBodyListGUI, "Body List~");
                             Rect rect2 = new Rect(rect.right, rect.top + rect.height - 185, 250, 300);
@@ -657,6 +740,7 @@ namespace ContractController
                             showParameterListGUI = false;
                             //showStringBlacklistGUI = false;
                             showStringWhitelistGUI = false;
+                            showEditAllGUI = false;
                             Rect rect1 = new Rect(rect.right, rect.top, 250, 300);
                             rect1 = GUI.Window(stringGuid, rect1, stringBlackListGUI, "Blacklisted Strings~");
                             //Rect rect2 = new Rect(rect.right, rect.top + rect.height - 180, 250, 300);
@@ -670,9 +754,110 @@ namespace ContractController
                             showBodyBlacklistGUI = false;
                             showAutoParamGUI = false;
                             showParameterListGUI = false;
+                            showEditAllGUI = false;
                             //showStringWhitelistGUI = false;
                             Rect rect1 = new Rect(rect.right, rect.top, 250, 300);
                             rect1 = GUI.Window(autoStringGuid, rect1, stringAutoListGUI, "Whitelisted Strings~");
+                            //Rect rect2 = new Rect(rect.right, rect.top + rect.height - 180, 250, 300);
+                            //rect2 = GUI.Window(autoStringListGuid, rect2, userStringAutoListGUI, "AutoListed Strings~");
+                        }
+
+                    }
+                    if (showEditAllGUI)
+                    {
+                        showParameterChangeGUI = false;
+                        showStringBlacklistGUI = false;
+                        showBodyAutoListGUI = false;
+                        showBodyBlacklistGUI = false;
+                        showAutoParamGUI = false;
+                        showParameterListGUI = false;
+                        showStringWhitelistGUI = false;
+
+                        Rect rect1 = new Rect(mainGUI.right, mainGUI.top, 250, 460);
+                        rect1 = GUI.Window(editAllGuid, rect1, editAllWindow, "Edit All~");
+
+                        if (showAllParameterChangeGUI)
+                        {
+                            //showParameterChangeGUI = false;
+                            showAllBodyBlacklistGUI = false;
+                            showAllBodyAutoListGUI = false;
+                            showAllAutoParamGUI = false;
+                            showAllParameterListGUI = false;
+                            showAllStringBlacklistGUI = false;
+                            showAllStringWhitelistGUI = false;;
+                            Rect rect2 = new Rect(rect1.right, rect1.top, 250, 300);
+                            rect2 = GUI.Window(allparameterGuid, rect2, allParamWindow, "Parameter List~");
+                            Rect rect3 = new Rect(rect1.right, rect1.top + rect1.height - 160, 250, 300);
+                            rect3 = GUI.Window(allparameterListGuid, rect3, allParamListWindow, "Blacklisted Parameters~");
+
+                        }
+                        if (showAllAutoParamGUI)
+                        {
+                            showAllParameterChangeGUI = false;
+                            showAllBodyBlacklistGUI = false;
+                            showAllBodyAutoListGUI = false;
+                            //showAutoParamGUI = false;
+                            showAllParameterListGUI = false;
+                            showAllStringBlacklistGUI = false;
+                            showAllStringWhitelistGUI = false;
+                            Rect rect2 = new Rect(rect1.right, rect1.top, 250, 300);
+                            rect2 = GUI.Window(allautoParameterGuid, rect2, allAutoParameterListGUI, "Auto-Parameter List~");
+                            Rect rect3 = new Rect(rect1.right, rect1.top + rect1.height - 160, 250, 300);
+                            rect3 = GUI.Window(allautoParameterListGuid, rect3, allAutoListParameterGUI, "AutoParameters~");
+                        }
+                        if (showAllBodyBlacklistGUI)
+                        {
+                            showAllParameterChangeGUI = false;
+                            //showBodyBlacklistGUI = false;
+                            showAllBodyAutoListGUI = false;
+                            showAllAutoParamGUI = false;
+                            showAllParameterListGUI = false;
+                            showAllStringBlacklistGUI = false;
+                            showAllStringWhitelistGUI = false;
+                            Rect rect2 = new Rect(rect1.right, rect1.top, 250, 300);
+                            rect2 = GUI.Window(allbodyGuid, rect2, allBodyBlacklistGUI, "Body List~");
+                            Rect rect3 = new Rect(rect1.right, rect1.top + rect1.height - 160, 250, 300);
+                            rect3 = GUI.Window(allbodyListGuid, rect3, allUserBodyBlackListGUI, "Blacklisted Bodies~");
+                        }
+                        if (showAllBodyAutoListGUI)
+                        {
+                            showAllParameterChangeGUI = false;
+                            showAllBodyBlacklistGUI = false;
+                            //showBodyAutoListGUI = false;
+                            showAllAutoParamGUI = false;
+                            showAllParameterListGUI = false;
+                            showAllStringBlacklistGUI = false;
+                            showAllStringWhitelistGUI = false;
+                            Rect rect2 = new Rect(rect1.right, rect1.top, 250, 300);
+                            rect2 = GUI.Window(allautoBodyGuid, rect2, allAutoBodyListGUI, "Body List~");
+                            Rect rect3 = new Rect(rect1.right, rect1.top + rect1.height - 160, 250, 300);
+                            rect3 = GUI.Window(allautoBodyListGuid, rect3, allUserAutoBodyListGUI, "AutoListed Bodies~");
+                        }
+                        if (showAllStringBlacklistGUI)
+                        {
+                            showAllParameterChangeGUI = false;
+                            showAllBodyBlacklistGUI = false;
+                            showAllBodyAutoListGUI = false;
+                            showAllAutoParamGUI = false;
+                            showAllParameterListGUI = false;
+                            //showStringBlacklistGUI = false;
+                            showAllStringWhitelistGUI = false;
+                            Rect rect2 = new Rect(rect1.right, rect1.top, 250, 300);
+                            rect2 = GUI.Window(allstringGuid, rect2, allStringBlackListGUI, "Blacklisted Strings~");
+                            //Rect rect2 = new Rect(rect.right, rect.top + rect.height - 180, 250, 300);
+                            //rect2 = GUI.Window(stringListGuid, rect2, userStringBlackListGUI, "Blacklisted Strings~");
+                        }
+                        if (showAllStringWhitelistGUI)
+                        {
+                            showAllParameterChangeGUI = false;
+                            showAllStringBlacklistGUI = false;
+                            showAllBodyAutoListGUI = false;
+                            showAllBodyBlacklistGUI = false;
+                            showAllAutoParamGUI = false;
+                            showAllParameterListGUI = false;
+                            //showStringWhitelistGUI = false;
+                            Rect rect2 = new Rect(rect1.right, rect1.top, 250, 300);
+                            rect2 = GUI.Window(allautoStringGuid, rect2, allStringWhiteListGUI, "Whitelisted Strings~");
                             //Rect rect2 = new Rect(rect.right, rect.top + rect.height - 180, 250, 300);
                             //rect2 = GUI.Window(autoStringListGuid, rect2, userStringAutoListGUI, "AutoListed Strings~");
                         }
@@ -682,6 +867,401 @@ namespace ContractController
 
 
 
+        }
+        public void editAllWindow(int windowID)
+        {
+            GUI.backgroundColor = new Color(0,0,0);
+            if(ContractSystem.Instance.isActiveAndEnabled && ContractSystem.Instance != null)
+            {
+                GUILayout.BeginVertical();
+                GUILayout.Label("");
+                scrollPosition11 = GUILayout.BeginScrollView(scrollPosition11, GUILayout.Width(235), GUILayout.Height(250));
+                //mainGUI.position = scrollPosition;
+                //Debug.Log("2");
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("minFundsAdvance:");
+                //minFundsAdvance = tp.minFundsAdvance.ToString();
+                minFundsAdvanceString = GUILayout.TextField(minFundsAdvanceString);
+                //tp.minFundsAdvance = float.Parse(minFundsAdvance);
+                //typePrefDict[tp][0] = GUILayout.TextField(typePrefDict[tp][0]); //this fucks up
+                GUILayout.EndHorizontal();
+                //Debug.Log("3");
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("maxFundsAdvance:");
+                maxFundsAdvanceString = GUILayout.TextField(maxFundsAdvanceString);
+                //tp.maxFundsAdvance = float.Parse(GUILayout.TextField(tp.maxFundsAdvance.ToString()));
+                GUILayout.EndHorizontal(); ;
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("minFundsComplete:");
+                minFundsCompleteString = GUILayout.TextField(minFundsCompleteString);
+                //tp.minFundsCompletion = float.Parse(GUILayout.TextField(tp.minFundsCompletion.ToString()));
+                GUILayout.EndHorizontal();
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("maxFundsComplete:");
+                maxFundsCompleteString = GUILayout.TextField(maxFundsCompleteString);
+                //tp.maxFundsCompletion = float.Parse(GUILayout.TextField(tp.maxFundsCompletion.ToString()));
+                GUILayout.EndHorizontal();
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("minFundsFailure:");
+                minFundsFailureString = GUILayout.TextField(minFundsFailureString);
+                //tp.minFundsFailure = float.Parse(GUILayout.TextField(tp.minFundsFailure.ToString()));
+                GUILayout.EndHorizontal();
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("maxFundsFailure:");
+                maxFundsFailureString = GUILayout.TextField(maxFundsFailureString);
+                //tp.maxFundsFailure = float.Parse(GUILayout.TextField(tp.maxFundsFailure.ToString()));
+                GUILayout.EndHorizontal();
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("minRepComplete:");
+                minRepCompleteString = GUILayout.TextField(minRepCompleteString);
+                //tp.minRepCompletion = float.Parse(GUILayout.TextField(tp.minRepCompletion.ToString()));
+                GUILayout.EndHorizontal();
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("maxRepComplete:");
+                maxRepCompleteString = GUILayout.TextField(maxRepCompleteString);
+                //tp.maxRepCompletion = float.Parse(GUILayout.TextField(tp.maxRepCompletion.ToString()));
+                GUILayout.EndHorizontal();
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("minRepFailure:");
+                minRepFailureString = GUILayout.TextField(minRepFailureString);
+                //tp.minRepFailure = float.Parse(GUILayout.TextField(tp.minRepFailure.ToString()));
+                GUILayout.EndHorizontal();
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("maxRepFailure:");
+                maxRepFailureString = GUILayout.TextField(maxRepFailureString);
+                //tp.maxRepFailure = float.Parse(GUILayout.TextField(tp.maxRepFailure.ToString()));
+                GUILayout.EndHorizontal();
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("minScienceComplete:");
+                minScienceCompleteString = GUILayout.TextField(minScienceCompleteString);
+                //tp.minScienceCompletion = float.Parse(GUILayout.TextField(tp.minScienceCompletion.ToString()));
+                GUILayout.EndHorizontal();
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("maxScienceComplete:");
+                maxScienceCompleteString = GUILayout.TextField(maxScienceCompleteString);
+                //tp.maxScienceCompletion = float.Parse(GUILayout.TextField(tp.maxScienceCompletion.ToString()));
+                GUILayout.EndHorizontal();
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("minParameters:");
+                minParamsString = GUILayout.TextField(minParamsString);
+                //tp.minParams = int.Parse(GUILayout.TextField(tp.minParams.ToString()));
+                GUILayout.EndHorizontal();
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("maxParameters:");
+                maxParamsString = GUILayout.TextField(maxParamsString);
+                //tp.maxParams = int.Parse(GUILayout.TextField(tp.maxParams.ToString()));
+                GUILayout.EndHorizontal();
+
+                //Note: have in-scope strings which convert to float/int, as the above doesn't work
+                GUILayout.EndScrollView();
+
+                if (GUILayout.Button("Blacklist Parameters"))
+                {
+                    showAllParameterChangeGUI = !showAllParameterChangeGUI;
+                    showAllParameterListGUI = !showAllParameterListGUI;
+                }
+                if (GUILayout.Button("AutoAccept Parameters"))
+                {
+                    showAllAutoParamGUI = !showAllAutoParamGUI;
+
+                }
+                if (GUILayout.Button("Blacklist Bodies"))
+                {
+                    showAllBodyBlacklistGUI = !showAllBodyBlacklistGUI;
+                }
+                if (GUILayout.Button("AutoAccept Bodies"))
+                {
+                    showAllBodyAutoListGUI = !showAllBodyAutoListGUI;
+                }
+                if (GUILayout.Button("Blacklist Strings"))
+                {
+                    showAllStringBlacklistGUI = !showAllStringBlacklistGUI;
+                }
+                if (GUILayout.Button("Whitelist Strings"))
+                {
+                    showAllStringWhitelistGUI = !showAllStringWhitelistGUI;
+                }
+                if(GUILayout.Button("Close"))
+                {
+                    statusString = "Saving All...";
+                    //mySave();
+                    foreach (Type t in Contracts.ContractSystem.ContractTypes)
+                    {
+                        try
+                        {
+                            //Debug.Log(typePrefDict.Count);
+                            //Debug.Log(typePrefDict[typeMap[editingType]].Count);
+                            ///*
+                            TypePreference tp1 = typeMap[t];
+                            statusString = "Saving: " + t.Name;
+                            tp1.minFundsAdvance = float.Parse(minFundsAdvanceString);
+                            //Debug.Log("saving: " + tp.minFundsAdvance);
+                            tp1.maxFundsAdvance = float.Parse(maxFundsAdvanceString);
+                            tp1.minFundsCompletion = float.Parse(minFundsCompleteString);
+                            tp1.maxFundsCompletion = float.Parse(maxFundsCompleteString);
+                            tp1.minFundsFailure = float.Parse(minFundsFailureString);
+                            tp1.maxFundsFailure = float.Parse(maxFundsFailureString);
+
+                            tp1.minRepCompletion = float.Parse(minRepCompleteString);
+                            tp1.maxRepCompletion = float.Parse(maxRepCompleteString);
+                            tp1.minRepFailure = float.Parse(minRepFailureString);
+                            tp1.maxRepFailure = float.Parse(maxRepFailureString);
+
+                            tp1.minScienceCompletion = float.Parse(minScienceCompleteString);
+                            tp1.maxScienceCompletion = float.Parse(maxScienceCompleteString);
+
+                            tp1.minParams = int.Parse(minParamsString);
+                            tp1.maxParams = int.Parse(maxParamsString);
+                            tp1.minPrestiege = int.Parse(minPrestiegeString);
+                            tp1.maxPrestiege = int.Parse(maxPrestiegeString);
+
+                            
+
+                            tp1.autoParameters = whiteParams;
+                            tp1.blockedParameters = blockedParams;
+                            tp1.autoBodies = whiteBodies;
+                            tp1.blockedBodies = blackBodies;
+                            tp1.autoStrings = whiteStrings;
+                            tp1.blockedStrings = blackStrings;
+
+                            typeMap[t] = tp1;
+                            //tp = tp1;
+                            //*/
+                            //Debug.Log(tp.minFundsCompletion);
+                            statusString = "Saved!";
+                            
+                        }
+                        catch (Exception e)
+                        {
+                            statusString = "Failed to save!";
+                        }
+                    }
+                    Debug.Log("Settings Saved");
+                    statusString = "Saved!";
+                    //idleWatch.Restart();
+                    idleWatch.Reset();
+                    idleWatch.Start();
+
+                    showEditAllGUI = false;
+                }
+            }
+        }
+        public void allParamWindow(int windowID)
+        {
+            GUI.backgroundColor = new Color(0, 0, 0);
+            List<Type> bloop = blockedParams;
+            scrollPosition13 = GUILayout.BeginScrollView(scrollPosition13, GUILayout.Width(235), GUILayout.Height(290));
+            foreach (Type cp in ContractSystem.ParameterTypes)
+            {
+                if (!bloop.Contains(cp))
+                {
+                    if (GUILayout.Button("" + cp.Name))
+                    {
+                        blockedParams.Add(cp);
+
+                    }
+                }
+            }
+            GUILayout.EndScrollView();
+        }
+        public void allParamListWindow(int windowID)
+        {
+            GUI.backgroundColor = new Color(0, 0, 0);
+            List<Type> bloop = blockedParams;
+
+            scrollPosition14 = GUILayout.BeginScrollView(scrollPosition14, GUILayout.Width(235), GUILayout.Height(290));
+            foreach (Type cp in bloop)
+            {
+                if (GUILayout.Button(cp.Name))
+                {
+                    try
+                    {
+                        blockedParams.Remove(cp);
+                    }
+                    catch (Exception e)
+                    {
+
+                    }
+
+                }
+            }
+            GUILayout.EndScrollView();
+        }
+
+        public void allAutoParameterListGUI(int windowID)
+        {
+            GUI.backgroundColor = new Color(0, 0, 0);
+            List<Type> bloop = whiteParams;
+            scrollPosition13 = GUILayout.BeginScrollView(scrollPosition13, GUILayout.Width(235), GUILayout.Height(290));
+            foreach (Type cp in ContractSystem.ParameterTypes)
+            {
+                if (!bloop.Contains(cp))
+                {
+                    if (GUILayout.Button("" + cp.Name))
+                    {
+                        if (blockedParams.Contains(cp))
+                        {
+                            try
+                            {
+                                blockedParams.Remove(cp);
+                            }
+                            catch (Exception e)
+                            {
+
+                            }
+
+                        }
+                        whiteParams.Add(cp);
+
+                    }
+                }
+            }
+            GUILayout.EndScrollView();
+        }
+
+        public void allAutoListParameterGUI(int windowID)
+        {
+            GUI.backgroundColor = new Color(0, 0, 0);
+            List<Type> bloop = new List<Type>();
+            bloop = whiteParams;
+
+            scrollPosition14 = GUILayout.BeginScrollView(scrollPosition14, GUILayout.Width(235), GUILayout.Height(290));
+            foreach (Type cp in bloop)
+            {
+                if (GUILayout.Button(cp.Name))
+                {
+                    try
+                    {
+                        whiteParams.Remove(cp);
+                    }
+                    catch (Exception e)
+                    {
+
+                    }
+
+                }
+            }
+            GUILayout.EndScrollView();
+        }
+        public void allBodyBlacklistGUI(int windowID)
+        {
+            GUI.backgroundColor = new Color(0, 0, 0);
+            scrollPosition15 = GUILayout.BeginScrollView(scrollPosition15, GUILayout.Width(235), GUILayout.Height(290));
+            foreach (CelestialBody body in FlightGlobals.Bodies)
+            {
+                if (!blackBodies.Contains(body.name))
+                {
+                    if (GUILayout.Button(body.name))
+                    {
+                        blackBodies.Add(body.name);
+                    }
+                }
+            }
+            GUILayout.EndScrollView();
+        }
+        public void allUserBodyBlackListGUI(int windowID)
+        {
+            GUI.backgroundColor = new Color(0, 0, 0);
+            scrollPosition16 = GUILayout.BeginScrollView(scrollPosition16, GUILayout.Width(235), GUILayout.Height(290));
+            List<String> list = blackBodies;
+            foreach (String s in list)
+            {
+                if (GUILayout.Button(s))
+                {
+                    try
+                    {
+                        blackBodies.Remove(s);
+                    }
+                    catch (Exception e)
+                    {
+
+                    }
+
+                }
+            }
+            GUILayout.EndScrollView();
+        }
+        public void allAutoBodyListGUI(int windowID)
+        {
+            GUI.backgroundColor = new Color(0, 0, 0);
+            scrollPosition17 = GUILayout.BeginScrollView(scrollPosition17, GUILayout.Width(235), GUILayout.Height(290));
+            foreach (CelestialBody body in FlightGlobals.Bodies)
+            {
+                if (!whiteBodies.Contains(body.name))
+                {
+                    if (GUILayout.Button(body.name))
+                    {
+                        whiteBodies.Add(body.name);
+                    }
+                }
+            }
+            GUILayout.EndScrollView();
+        }
+        public void allUserAutoBodyListGUI(int windowID)
+        {
+            GUI.backgroundColor = new Color(0, 0, 0);
+            scrollPosition18 = GUILayout.BeginScrollView(scrollPosition18, GUILayout.Width(235), GUILayout.Height(290));
+            List<String> list = whiteBodies;
+            foreach (String s in list)
+            {
+                if (GUILayout.Button(s))
+                {
+                    try
+                    {
+                        whiteBodies.Remove(s);
+                    }
+                    catch (Exception e)
+                    {
+
+                    }
+
+                }
+            }
+            GUILayout.EndScrollView();
+        }
+        public void allStringBlackListGUI(int windowID)
+        {
+            GUI.backgroundColor = new Color(0, 0, 0);
+            GUILayout.Label("Note: The strings are case sensitive");
+            stringthing = GUILayout.TextField(stringthing);
+            if (GUILayout.Button("Add"))
+            {
+                if (!blackStrings.Contains(stringthing))
+                {
+                    blackStrings.Add(stringthing);
+                }
+            }
+            scrollPosition19 = GUILayout.BeginScrollView(scrollPosition19, GUILayout.Width(235), GUILayout.Height(290));
+            foreach (String s in blackStrings)
+            {
+                if (GUILayout.Button(s))
+                {
+                    blackStrings.Remove(s);
+                }
+            }
+            GUILayout.EndScrollView();
+        }
+        public void allStringWhiteListGUI(int windowID)
+        {
+            GUI.backgroundColor = new Color(0, 0, 0);
+            GUILayout.Label("Note: The strings are case sensitive");
+            stringthing1 = GUILayout.TextField(stringthing1);
+            if (GUILayout.Button("Add"))
+            {
+                if (!whiteStrings.Contains(stringthing1))
+                {
+                    whiteStrings.Add(stringthing1);
+                }
+            }
+            scrollPosition20 = GUILayout.BeginScrollView(scrollPosition20, GUILayout.Width(235), GUILayout.Height(290));
+            foreach (String s in whiteStrings)
+            {
+                if (GUILayout.Button(s))
+                {
+                    whiteStrings.Remove(s);
+                }
+            }
+            GUILayout.EndScrollView();
         }
         public void mainGUIWindow(int windowID)
         {
@@ -695,7 +1275,7 @@ namespace ContractController
 
                 foreach (Type t in Contracts.ContractSystem.ContractTypes)
                 {
-                    if(blockedTypes.Contains(t))
+                    if (blockedTypes.Contains(t))
                     {
                         GUI.backgroundColor = new Color(1.0f, 0.25f, 0.25f);
                         if (GUILayout.Button(t.Name))
@@ -705,6 +1285,7 @@ namespace ContractController
                             showParameterChangeGUI = false;
                             showParameterListGUI = false;
                             showAutoParamGUI = false;
+                            showEditAllGUI = false;
                         }
                         GUI.backgroundColor = new Color(0.0f, 0.0f, 0f);
                     }
@@ -718,13 +1299,22 @@ namespace ContractController
                             showParameterChangeGUI = false;
                             showParameterListGUI = false;
                             showAutoParamGUI = false;
+                            showEditAllGUI = false;
                         }
                         GUI.backgroundColor = new Color(0.0f, 0.0f, 0f);
                     }
-                    
+
 
                 }
                 GUILayout.EndScrollView();
+                if (GUILayout.Button("Edit All"))
+                {
+                    showEditAllGUI = !showEditAllGUI;
+                    showtypeprefeditor = false;
+                    showParameterChangeGUI = false;
+                    showParameterListGUI = false;
+                    showAutoParamGUI = false;
+                }
                 if (isSorting)
                 {
                     if (GUILayout.Button("Stop Sorting"))
@@ -781,7 +1371,7 @@ namespace ContractController
 
         public void editTypePrefGUI(int windowID)
         {
-            GUI.backgroundColor = new Color(0,0,0);
+            GUI.backgroundColor = new Color(0, 0, 0);
             if (ContractSystem.Instance.isActiveAndEnabled && ContractSystem.Instance != null)
             {
                 //minFunds
@@ -876,7 +1466,7 @@ namespace ContractController
                 GUILayout.EndVertical();
                 if (blockedTypes.Contains(editingType))
                 {
-                    
+
                     if (GUILayout.Button("Accept Type"))
                     {
                         blockedTypes.Remove(editingType);
@@ -1177,12 +1767,12 @@ namespace ContractController
         public void stringAutoListGUI(int windowID)
         {
             GUI.backgroundColor = new Color(0, 0, 0);
-            TypePreference tp = typeMap[editingType]; 
+            TypePreference tp = typeMap[editingType];
             GUILayout.Label("Note: The strings are case sensitive");
             stringthing1 = GUILayout.TextField(stringthing1);
             if (GUILayout.Button("Add"))
             {
-                if (!tp.blockedStrings.Contains(stringthing1))
+                if (!tp.autoStrings.Contains(stringthing1))
                 {
                     tp.autoStrings.Add(stringthing1);
                 }
@@ -1468,21 +2058,21 @@ namespace ContractController
         {
             Type t = c.GetType();
             TypePreference tp = typeMap[t];
-            foreach(String s in tp.autoBodies)
+            foreach (String s in tp.autoBodies)
             {
                 if (checkForString(c, s))
                 {
                     return true;
                 }
             }
-            if(tp.autoBodies.Contains("Kerbin"))
+            if (tp.autoBodies.Contains("Kerbin"))
             {
                 if (checkForString(c, "Launch Site"))
                 {
                     return true;
                 }
             }
-            
+
             return false;
         }
         public bool checkForWhitedParameter(Contract c)
@@ -1600,14 +2190,14 @@ namespace ContractController
         {
             foreach (Contract c in contractList)
             {
-                
-                if(c.ContractState == Contract.State.Offered)
+
+                if (c.ContractState == Contract.State.Offered)
                 {
                     Debug.Log("Removing: " + c.Title);
                     statusString = "Declining: " + c.Title;
                     c.Decline();
                 }
-                
+
                 //Contracts.ContractSystem.Instance.Contracts.Remove(c);
             }
         }
@@ -1615,16 +2205,16 @@ namespace ContractController
         {
             foreach (Contract c in contractList)
             {
-                
+
                 //Debug.Log(c.DateAccepted);
-                if(c.ContractState == Contract.State.Offered)
+                if (c.ContractState == Contract.State.Offered)
                 {
                     Debug.Log("Accepting: " + c.Title);
                     statusString = "Accepting: " + c.Title;
                     c.Accept();
                 }
-                
-                
+
+
                 //c.AutoAccept = true;
                 //c.AutoAccept = false;
             }
