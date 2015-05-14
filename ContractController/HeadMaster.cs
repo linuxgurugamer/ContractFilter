@@ -602,7 +602,7 @@ namespace ContractController
                             showStringWhitelistGUI = false;
                             Rect rect1 = new Rect(rect.right, rect.top, 250, 300);
                             rect1 = GUI.Window(parameterGuid, rect1, changeParameterGUI, "Parameter List~");
-                            Rect rect2 = new Rect(rect.right, rect.top + rect.height - 210, 250, 300);
+                            Rect rect2 = new Rect(rect.right, rect.top + rect.height - 185, 250, 300);
                             rect2 = GUI.Window(parameterListGuid, rect2, parameterListGUI, "Blacklisted Parameters~");
 
                         }
@@ -617,7 +617,7 @@ namespace ContractController
                             showStringWhitelistGUI = false;
                             Rect rect1 = new Rect(rect.right, rect.top, 250, 300);
                             rect1 = GUI.Window(autoParameterGuid, rect1, autoParameterListGUI, "Auto-Parameter List~");
-                            Rect rect2 = new Rect(rect.right, rect.top + rect.height - 210, 250, 300);
+                            Rect rect2 = new Rect(rect.right, rect.top + rect.height - 185, 250, 300);
                             rect2 = GUI.Window(autoParameterListGuid, rect2, autoListParameterGUI, "AutoParameters~");
                         }
                         if (showBodyBlacklistGUI)
@@ -631,7 +631,7 @@ namespace ContractController
                             showStringWhitelistGUI = false;
                             Rect rect1 = new Rect(rect.right, rect.top, 250, 300);
                             rect1 = GUI.Window(bodyGuid, rect1, bodyBlacklistGUI, "Body List~");
-                            Rect rect2 = new Rect(rect.right, rect.top + rect.height - 210, 250, 300);
+                            Rect rect2 = new Rect(rect.right, rect.top + rect.height - 185, 250, 300);
                             rect2 = GUI.Window(bodyListGuid, rect2, userBodyBlackListGUI, "Blacklisted Bodies~");
                         }
                         if (showBodyAutoListGUI)
@@ -645,7 +645,7 @@ namespace ContractController
                             showStringWhitelistGUI = false;
                             Rect rect1 = new Rect(rect.right, rect.top, 250, 300);
                             rect1 = GUI.Window(autoBodyGuid, rect1, autoBodyListGUI, "Body List~");
-                            Rect rect2 = new Rect(rect.right, rect.top + rect.height - 210, 250, 300);
+                            Rect rect2 = new Rect(rect.right, rect.top + rect.height - 185, 250, 300);
                             rect2 = GUI.Window(autoBodyListGuid, rect2, userAutoBodyListGUI, "AutoListed Bodies~");
                         }
                         if (showStringBlacklistGUI)
