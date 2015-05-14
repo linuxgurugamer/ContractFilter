@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Diagnostics;
 using UnityEngine;
 using KSP.IO;
 using Contracts;
@@ -14,6 +15,7 @@ using Contracts.Templates;
 using Contracts.Agents.Mentalities;
 
 using File = System.IO.File;
+using Debug = UnityEngine.Debug;
 
 namespace ContractController
 {
@@ -24,7 +26,7 @@ namespace ContractController
         //Per-type blocks and prefers
 
         ApplicationLauncherButton CCButton = null;
-        private Rect mainGUI = new Rect(150, 150, 250, 525);
+        private Rect mainGUI = new Rect(100, 100, 250, 575);
 
         private bool showGUI = true;
         int mainGUID;
@@ -68,9 +70,9 @@ namespace ContractController
         bool showStringWhitelistGUI = false;
 
 
-        String line;
-
-        bool done = false;
+        String statusString = "";
+        double timeTillIdle = 15000;
+        Stopwatch idleWatch = new Stopwatch();
         [Persistent]
         bool inited = false;
 
@@ -84,6 +86,7 @@ namespace ContractController
 
         void Awake()
         {
+            
             DontDestroyOnLoad(this);
             Debug.Log("*yawn* I'm awake");
             mainGUID = Guid.NewGuid().GetHashCode();
@@ -105,6 +108,7 @@ namespace ContractController
 
             if (buttonNeedsInit && HighLogic.LoadedScene == GameScenes.SPACECENTER)
             {
+                
                 Debug.Log("Initing buttons");
                 InitButtons();
             }
@@ -124,11 +128,9 @@ namespace ContractController
                         if (typeMap.Count == 0)
                         {
 
+                            String[] files = System.IO.Directory.GetFiles(KSPUtil.ApplicationRootPath + "/GameData/ContractFilter/", "*.cfg");
 
-
-                            String[] files = System.IO.Directory.GetFiles(KSPUtil.ApplicationRootPath + "/GameData/ContractController/", "*.cfg");
-
-                            if (files.Contains(KSPUtil.ApplicationRootPath + "/GameData/ContractController/settings.cfg"))
+                            if (files.Contains(KSPUtil.ApplicationRootPath + "/GameData/ContractFilter/settings.cfg"))
                             {
                                 initTypePreferences();
                                 myLoad();
@@ -137,6 +139,7 @@ namespace ContractController
                             {
                                 initTypePreferences();
                             }
+                            idleWatch.Start();
                             //Debug.Log(typeMap.Count);
                             //myLoad();
                         }
@@ -159,7 +162,7 @@ namespace ContractController
                                 //check blocked agents
                                 //check intParams
                                 //check finances
-
+                                
 
                                 if (checkForBlockedType(c)) { toDelete.Add(c); }
 
@@ -212,6 +215,15 @@ namespace ContractController
                         acceptWhitedContracts(toAccept);
                     }
                 }
+                if(idleWatch.ElapsedMilliseconds >= 25000 && !isSorting)
+                {
+                    statusString = "Idling";
+                }
+            }
+            else
+            {
+                showGUI = false;
+                
             }
         }
         void OnAppButtonReady()
@@ -231,7 +243,7 @@ namespace ContractController
                         DummyVoid,
                         DummyVoid,
                         ApplicationLauncher.AppScenes.SPACECENTER,
-                        (Texture)GameDatabase.Instance.GetTexture("ContractController/Textures/appButton", false));
+                        (Texture)GameDatabase.Instance.GetTexture("ContractFilter/Textures/appButton", false));
                 }
             }
             
@@ -240,7 +252,11 @@ namespace ContractController
         private void ShowGUI()
         {
             Debug.Log("ShowGUI");
-            showGUI = true;
+            if(HighLogic.LoadedScene == GameScenes.SPACECENTER)
+            {
+                showGUI = true;
+            }
+            
         }
 
         private void HideGUI()
@@ -256,28 +272,36 @@ namespace ContractController
 
         void OnAppLaunchToggleOn()
         {
-            showGUI = true;
+            if(HighLogic.LoadedScene == GameScenes.SPACECENTER)
+            {
+                showGUI = true;
+            }
+            
         }
 
         void DummyVoid() { }
 
         void InitButtons()
         {
-            Debug.Log("Init Buttons");
-            if (CCButton == null)
+            if(HighLogic.LoadedScene == GameScenes.SPACECENTER)
             {
-                Debug.Log("AppButton Null, proceeding to ready.");
-                GameEvents.onGUIApplicationLauncherReady.Add(OnAppButtonReady);
-                if (ApplicationLauncher.Ready)
+                Debug.Log("Init Buttons");
+                if (CCButton == null)
                 {
-                    OnAppButtonReady();
+                    Debug.Log("AppButton Null, proceeding to ready.");
+                    GameEvents.onGUIApplicationLauncherReady.Add(OnAppButtonReady);
+                    if (ApplicationLauncher.Ready)
+                    {
+                        OnAppButtonReady();
+                    }
                 }
+
+                GameEvents.onShowUI.Add(ShowGUI);
+                GameEvents.onHideUI.Add(HideGUI);
+
+                buttonNeedsInit = false;
             }
-
-            GameEvents.onShowUI.Add(ShowGUI);
-            GameEvents.onHideUI.Add(HideGUI);
-
-            buttonNeedsInit = false;
+            
         }
 
         void DestroyButtons()
@@ -290,7 +314,7 @@ namespace ContractController
             if (CCButton != null)
                 ApplicationLauncher.Instance.RemoveModApplication(CCButton);
 
-
+            showGUI = false;
             buttonNeedsInit = true;
         }
 
@@ -306,143 +330,150 @@ namespace ContractController
             //List<Type> blockedTypes = HeadMaster.blockedTypes;
             //Dictionary<Type, TypePreference> typeMap = HeadMaster.typeMap;
             //Dictionary<TypePreference, List<String>> typePrefDict = HeadMaster.typePrefDict;
-
-            int progress = -1;
-            Type loadingType = typeMap.Keys.ElementAt(0);
-            //Debug.Log(loadingType);
-            String line = null;
-            //Debug.Log(Type.GetType(loadingType.ToString(), true, true));
-            blockedTypes = new List<Type>();
-            TypePreference tp = TypePreference.getDefaultTypePreference();
-            using (StreamReader file = new StreamReader(KSPUtil.ApplicationRootPath + "/GameData/ContractController/settings.cfg"))
+            try
             {
-                while ((line = file.ReadLine()) != null)
+                int progress = -1;
+                Type loadingType = typeMap.Keys.ElementAt(0);
+                //Debug.Log(loadingType);
+                String line = null;
+                //Debug.Log(Type.GetType(loadingType.ToString(), true, true));
+                blockedTypes = new List<Type>();
+                TypePreference tp = TypePreference.getDefaultTypePreference();
+                using (StreamReader file = new StreamReader(KSPUtil.ApplicationRootPath + "/GameData/ContractFilter/settings.cfg"))
                 {
-                    //Debug.Log(line);
+                    while ((line = file.ReadLine()) != null)
+                    {
+                        //Debug.Log(line);
 
 
-                    //Debug.Log("Reading: " + line);
-                    if (line.StartsWith("~"))
-                    {
-                        //Debug.Log("BlockedType: " + Type.GetType(line.Substring(1)));
-                        blockedTypes.Add(Type.GetType(line.Substring(1)));
-                    }
+                        //Debug.Log("Reading: " + line);
+                        if (line.StartsWith("Blocked: true"))
+                        {
+                            Debug.Log("BlockedType: " + typeMap.Keys.ElementAt(progress));
+                            blockedTypes.Add(typeMap.Keys.ElementAt(progress));
+                        }
 
-                    if (line.StartsWith("*"))
-                    {
-                        progress++;
-                        //Debug.Log(typeMap.Keys.ElementAt(progress).Name);
-                        //Debug.Log(line.Substring(2, line.Length-1));
+                        if (line.StartsWith("*"))
+                        {
+                            progress++;
+                            //Debug.Log(typeMap.Keys.ElementAt(progress).Name);
+                            //Debug.Log(line.Substring(2, line.Length-1));
 
-                        //Type.GetType(,)
-                        loadingType = typeMap.Keys.ElementAt(progress);
-                        tp = typeMap[loadingType];
-                    }
-                    if (line.StartsWith("minFA"))
-                    {
+                            //Type.GetType(,)
+                            loadingType = typeMap.Keys.ElementAt(progress);
+                            tp = typeMap[loadingType];
+                        }
+                        if (line.StartsWith("minFA"))
+                        {
 
-                        tp.minFundsAdvance = float.Parse(line.Substring(7));
-                        tp.minFundsAdvanceString = line.Substring(7);
-                    }
-                    else if (line.StartsWith("maxFA"))
-                    {
-                        tp.maxFundsAdvance = float.Parse(line.Substring(7));
-                        tp.maxFundsAdvanceString = line.Substring(7);
-                    }
-                    else if (line.StartsWith("minFC"))
-                    {
-                        tp.minFundsCompletion = float.Parse(line.Substring(7));
-                        tp.minFundsCompleteString = line.Substring(7);
-                    }
-                    else if (line.StartsWith("maxFC"))
-                    {
-                        tp.maxFundsCompletion = float.Parse(line.Substring(7));
-                        tp.maxFundsCompleteString = line.Substring(7);
-                    }
-                    else if (line.StartsWith("minFF"))
-                    {
-                        tp.minFundsFailure = float.Parse(line.Substring(7));
-                        tp.minFundsFailureString = line.Substring(7);
-                    }
-                    else if (line.StartsWith("maxFF"))
-                    {
-                        tp.maxFundsFailure = float.Parse(line.Substring(7));
-                        tp.maxFundsFailureString = line.Substring(7);
-                    }
-                    else if (line.StartsWith("minRC"))
-                    {
-                        tp.minRepCompletion = float.Parse(line.Substring(7));
-                        tp.minRepCompleteString = line.Substring(7);
-                    }
-                    else if (line.StartsWith("maxRC"))
-                    {
-                        tp.maxRepCompletion = float.Parse(line.Substring(7));
-                        tp.maxRepCompleteString = line.Substring(7);
-                    }
-                    else if (line.StartsWith("minRF"))
-                    {
-                        tp.minRepFailure = float.Parse(line.Substring(7));
-                        tp.minRepFailureString = line.Substring(7);
-                    }
-                    else if (line.StartsWith("maxRF"))
-                    {
-                        tp.maxRepFailure = float.Parse(line.Substring(7));
-                        tp.maxRepFailureString = line.Substring(7);
-                    }
-                    else if (line.StartsWith("minSC"))
-                    {
-                        tp.minScienceCompletion = float.Parse(line.Substring(7));
-                        tp.minScienceCompleteString = line.Substring(7);
-                    }
-                    else if (line.StartsWith("maxSC"))
-                    {
-                        tp.maxScienceCompletion = float.Parse(line.Substring(7));
-                        tp.maxScienceCompleteString = line.Substring(7);
-                    }
-                    else if (line.StartsWith("minPar"))
-                    {
-                        tp.minParams = int.Parse(line.Substring(8));
-                        tp.minParamsString = line.Substring(8);
-                    }
-                    else if (line.StartsWith("maxPar"))
-                    {
-                        tp.maxParams = int.Parse(line.Substring(8));
-                        tp.maxParamsString = line.Substring(8);
-                    }
-                    else if (line.StartsWith("minPrstge"))
-                    {
-                        tp.minPrestiege = int.Parse(line.Substring(11));
-                        tp.minPrestiegeString = line.Substring(11);
-                    }
-                    else if (line.StartsWith("maxPrstge"))
-                    {
-                        tp.maxPrestiege = int.Parse(line.Substring(11));
-                        tp.maxPrestiegeString = line.Substring(11);
+                            tp.minFundsAdvance = float.Parse(line.Substring(7));
+                            tp.minFundsAdvanceString = line.Substring(7);
+                        }
+                        else if (line.StartsWith("maxFA"))
+                        {
+                            tp.maxFundsAdvance = float.Parse(line.Substring(7));
+                            tp.maxFundsAdvanceString = line.Substring(7);
+                        }
+                        else if (line.StartsWith("minFC"))
+                        {
+                            tp.minFundsCompletion = float.Parse(line.Substring(7));
+                            tp.minFundsCompleteString = line.Substring(7);
+                        }
+                        else if (line.StartsWith("maxFC"))
+                        {
+                            tp.maxFundsCompletion = float.Parse(line.Substring(7));
+                            tp.maxFundsCompleteString = line.Substring(7);
+                        }
+                        else if (line.StartsWith("minFF"))
+                        {
+                            tp.minFundsFailure = float.Parse(line.Substring(7));
+                            tp.minFundsFailureString = line.Substring(7);
+                        }
+                        else if (line.StartsWith("maxFF"))
+                        {
+                            tp.maxFundsFailure = float.Parse(line.Substring(7));
+                            tp.maxFundsFailureString = line.Substring(7);
+                        }
+                        else if (line.StartsWith("minRC"))
+                        {
+                            tp.minRepCompletion = float.Parse(line.Substring(7));
+                            tp.minRepCompleteString = line.Substring(7);
+                        }
+                        else if (line.StartsWith("maxRC"))
+                        {
+                            tp.maxRepCompletion = float.Parse(line.Substring(7));
+                            tp.maxRepCompleteString = line.Substring(7);
+                        }
+                        else if (line.StartsWith("minRF"))
+                        {
+                            tp.minRepFailure = float.Parse(line.Substring(7));
+                            tp.minRepFailureString = line.Substring(7);
+                        }
+                        else if (line.StartsWith("maxRF"))
+                        {
+                            tp.maxRepFailure = float.Parse(line.Substring(7));
+                            tp.maxRepFailureString = line.Substring(7);
+                        }
+                        else if (line.StartsWith("minSC"))
+                        {
+                            tp.minScienceCompletion = float.Parse(line.Substring(7));
+                            tp.minScienceCompleteString = line.Substring(7);
+                        }
+                        else if (line.StartsWith("maxSC"))
+                        {
+                            tp.maxScienceCompletion = float.Parse(line.Substring(7));
+                            tp.maxScienceCompleteString = line.Substring(7);
+                        }
+                        else if (line.StartsWith("minPar"))
+                        {
+                            tp.minParams = int.Parse(line.Substring(8));
+                            tp.minParamsString = line.Substring(8);
+                        }
+                        else if (line.StartsWith("maxPar"))
+                        {
+                            tp.maxParams = int.Parse(line.Substring(8));
+                            tp.maxParamsString = line.Substring(8);
+                        }
+                        else if (line.StartsWith("minPrstge"))
+                        {
+                            tp.minPrestiege = int.Parse(line.Substring(11));
+                            tp.minPrestiegeString = line.Substring(11);
+                        }
+                        else if (line.StartsWith("maxPrstge"))
+                        {
+                            tp.maxPrestiege = int.Parse(line.Substring(11));
+                            tp.maxPrestiegeString = line.Substring(11);
 
+                        }
+                        else if (line.StartsWith("`"))
+                        { //black body
+                            tp.blockedBodies.Add(line.Substring(1));
+                        }
+                        else if (line.StartsWith("!"))
+                        {
+                            tp.autoBodies.Add(line.Substring(1));
+                        }
+                        else if (line.StartsWith("@"))
+                        {
+                            tp.blockedStrings.Add(line.Substring(1));
+                        }
+                        else if (line.StartsWith("#"))
+                        {
+                            tp.autoStrings.Add(line.Substring(1));
+                        }
+                        typeMap[loadingType] = tp;
                     }
-                    else if(line.StartsWith("`"))
-                    { //black body
-                        tp.blockedBodies.Add(line.Substring(1));
-                    }
-                    else if(line.StartsWith("!"))
-                    {
-                        tp.autoBodies.Add(line.Substring(1));
-                    }
-                    else if(line.StartsWith("@"))
-                    {
-                        tp.blockedStrings.Add(line.Substring(1));
-                    }
-                    else if(line.StartsWith("#"))
-                    {
-                        tp.autoStrings.Add(line.Substring(1));
-                    }
-                    typeMap[loadingType] = tp;
+                    Debug.Log("Loaded");
+                    file.Close();
+                    file.Dispose();
+                    statusString = "Loaded!";
                 }
-                Debug.Log("Loaded");
-                file.Close();
-                file.Dispose();
-
             }
+            catch(Exception e)
+            {
+                statusString = "Load Failed!";
+            }
+            
 
         }
         internal void mySave()
@@ -452,93 +483,101 @@ namespace ContractController
 
             //could prefix type with char and save as currentLoadingType
             //
-
-            if (blockedTypes == null)
+            try
             {
-                Debug.Log("blockedTypes is null");
+                if (blockedTypes == null)
+                {
+                    Debug.Log("blockedTypes is null");
+                }
+                using (System.IO.StreamWriter file = new System.IO.StreamWriter(KSPUtil.ApplicationRootPath + "/GameData/ContractFilter/settings.cfg", false))
+                {
+                    Debug.Log("Writing");
+                    //Debug.Log(blockedTypes.Count);
+                    file.WriteLine("Blocked Types:");
+                    if (blockedTypes != null && blockedTypes.Count > 0)
+                    {
+                        foreach (Type t in blockedTypes)
+                        {
+                            file.WriteLine("~" + t.Name);
+                        }
+                    }
+
+                    file.WriteLine("---");
+                    //TypePreferences
+                    file.WriteLine("Type Preferences: ");
+                    int counter = 0;
+                    foreach (Type t in typeMap.Keys)
+                    {
+                        file.WriteLine("*" + t.Name);
+                        ///*
+                        if (blockedTypes.Contains(t))
+                        {
+                            file.WriteLine("Blocked: true");
+                        }
+                        else
+                        {
+                            file.WriteLine("Blocked: false");
+                        }
+                        /*
+                        foreach (String s in typePrefDict[typeMap[t]])
+                        {
+                            file.WriteLine(s);
+                        }
+                        */
+                        ///*
+                        TypePreference tp = typeMap[t];
+                        file.WriteLine("minFA: " + tp.minFundsAdvance);
+                        file.WriteLine("maxFA: " + tp.maxFundsAdvance);
+                        file.WriteLine("minFC: " + tp.minFundsCompletion);
+                        file.WriteLine("maxFC: " + tp.maxFundsCompletion);
+                        file.WriteLine("minFF: " + tp.minFundsFailure);
+                        file.WriteLine("maxFF: " + tp.maxFundsFailure);
+                        file.WriteLine("minRC: " + tp.minRepCompletion);
+                        file.WriteLine("maxRC: " + tp.maxRepCompletion);
+                        file.WriteLine("minRF: " + tp.minRepFailure);
+                        file.WriteLine("maxRF: " + tp.maxRepFailure);
+                        file.WriteLine("minSC: " + tp.minScienceCompletion);
+                        file.WriteLine("maxSC: " + tp.maxScienceCompletion);
+                        file.WriteLine("minPar: " + tp.minParams);
+                        file.WriteLine("maxPar: " + tp.maxParams);
+                        file.WriteLine("minPrstge: " + tp.minPrestiege);
+                        file.WriteLine("maxPrstge: " + tp.maxPrestiege);
+                        //*/
+                        //bodies
+                        file.WriteLine("Blacklisted Bodies:");
+                        foreach (String s in tp.blockedBodies)
+                        {
+                            file.WriteLine("`" + s);
+                        }
+                        file.WriteLine("Whitelisted Bodies:");
+                        foreach (String s in tp.autoBodies)
+                        {
+                            file.WriteLine("!" + s);
+                        }
+                        file.WriteLine("Blacklisted Strings");
+                        foreach (String s in tp.blockedStrings)
+                        {
+                            file.WriteLine("@" + s);
+                        }
+                        file.WriteLine("Whitelisted Strings");
+                        foreach (String s in tp.autoBodies)
+                        {
+                            file.WriteLine("#" + s);
+                        }
+                    }
+
+
+                    file.WriteLine("---");
+                    statusString = "Saved!";
+                    Debug.Log("Saved");
+                    file.Close();
+                }
             }
-            using (System.IO.StreamWriter file = new System.IO.StreamWriter(KSPUtil.ApplicationRootPath + "/GameData/ContractController/settings.cfg", false))
+            catch(Exception e)
             {
-                Debug.Log("Writing");
-                //Debug.Log(blockedTypes.Count);
-                file.WriteLine("Blocked Types:");
-                if (blockedTypes != null && blockedTypes.Count > 0)
-                {
-                    foreach (Type t in blockedTypes)
-                    {
-                        file.WriteLine("~" + t.Name);
-                    }
-                }
-
-                file.WriteLine("---");
-                //TypePreferences
-                file.WriteLine("Type Preferences: ");
-                int counter = 0;
-                foreach (Type t in typeMap.Keys)
-                {
-                    file.WriteLine("*" + t.Name);
-                    ///*
-                    if (blockedTypes.Contains(t))
-                    {
-                        file.WriteLine("Blocked: true");
-                    }
-                    else
-                    {
-                        file.WriteLine("Blocked: false");
-                    }
-                    /*
-                    foreach (String s in typePrefDict[typeMap[t]])
-                    {
-                        file.WriteLine(s);
-                    }
-                    */
-                    ///*
-                    TypePreference tp = typeMap[t];
-                    file.WriteLine("minFA: " + tp.minFundsAdvance);
-                    file.WriteLine("maxFA: " + tp.maxFundsAdvance);
-                    file.WriteLine("minFC: " + tp.minFundsCompletion);
-                    file.WriteLine("maxFC: " + tp.maxFundsCompletion);
-                    file.WriteLine("minFF: " + tp.minFundsFailure);
-                    file.WriteLine("maxFF: " + tp.maxFundsFailure);
-                    file.WriteLine("minRC: " + tp.minRepCompletion);
-                    file.WriteLine("maxRC: " + tp.maxRepCompletion);
-                    file.WriteLine("minRF: " + tp.minRepFailure);
-                    file.WriteLine("maxRF: " + tp.maxRepFailure);
-                    file.WriteLine("minSC: " + tp.minScienceCompletion);
-                    file.WriteLine("maxSC: " + tp.maxScienceCompletion);
-                    file.WriteLine("minPar: " + tp.minParams);
-                    file.WriteLine("maxPar: " + tp.maxParams);
-                    file.WriteLine("minPrstge: " + tp.minPrestiege);
-                    file.WriteLine("maxPrstge: " + tp.maxPrestiege);
-                    //*/
-                    //bodies
-                    file.WriteLine("Blacklisted Bodies:");
-                    foreach (String s in tp.blockedBodies)
-                    {
-                        file.WriteLine("`"+s);
-                    }
-                    file.WriteLine("Whitelisted Bodies:");
-                    foreach(String s in tp.autoBodies)
-                    {
-                        file.WriteLine("!" + s);
-                    }
-                    file.WriteLine("Blacklisted Strings");
-                    foreach(String s in tp.blockedStrings)
-                    {
-                        file.WriteLine("@" + s);
-                    }
-                    file.WriteLine("Whitelisted Strings");
-                    foreach(String s in tp.autoBodies)
-                    {
-                        file.WriteLine("#" + s);
-                    }
-                }
-
-
-                file.WriteLine("---");
-                Debug.Log("Saved");
-                file.Close();
+                statusString = "Save failed!";
             }
+            
         }
         void OnGUI()
         {
@@ -546,10 +585,10 @@ namespace ContractController
             {
                 if (ContractSystem.Instance.isActiveAndEnabled && ContractSystem.Instance != null)
                 {
-                    mainGUI = GUI.Window(mainGUID, mainGUI, mainGUIWindow, "Contract Controller~");
+                    mainGUI = GUI.Window(mainGUID, mainGUI, mainGUIWindow, "Contract Filter~");
                     if (showtypeprefeditor)
                     {
-                        Rect rect = new Rect(mainGUI.right, mainGUI.top, 250, 510);
+                        Rect rect = new Rect(mainGUI.right, mainGUI.top, 250, 485);
                         rect = GUI.Window(prefEditGUID, rect, editTypePrefGUI, "" + editingType.Name + "~");
 
                         if (showParameterChangeGUI)
@@ -651,19 +690,38 @@ namespace ContractController
                 //float value = 100;
                 //value = GUILayout.VerticalScrollbar(value, 5, 100, 0);
                 GUILayout.Label("Choose the contract type you want to edit:");
-                scrollPosition = GUILayout.BeginScrollView(scrollPosition, GUILayout.Width(175), GUILayout.Height(375));
+                scrollPosition = GUILayout.BeginScrollView(scrollPosition, GUILayout.Width(235), GUILayout.Height(375));
                 //mainGUI.position = scrollPosition;
 
                 foreach (Type t in Contracts.ContractSystem.ContractTypes)
                 {
-                    if (GUILayout.Button(t.Name))
+                    if(blockedTypes.Contains(t))
                     {
-                        editingType = t;
-                        showtypeprefeditor = true;
-                        showParameterChangeGUI = false;
-                        showParameterListGUI = false;
-                        showAutoParamGUI = false;
+                        GUI.backgroundColor = new Color(1.0f, 0.25f, 0.25f);
+                        if (GUILayout.Button(t.Name))
+                        {
+                            editingType = t;
+                            showtypeprefeditor = true;
+                            showParameterChangeGUI = false;
+                            showParameterListGUI = false;
+                            showAutoParamGUI = false;
+                        }
+                        GUI.backgroundColor = new Color(0.0f, 0.0f, 0f);
                     }
+                    else
+                    {
+                        GUI.backgroundColor = new Color(0.25f, 1.0f, 0.25f);
+                        if (GUILayout.Button(t.Name))
+                        {
+                            editingType = t;
+                            showtypeprefeditor = true;
+                            showParameterChangeGUI = false;
+                            showParameterListGUI = false;
+                            showAutoParamGUI = false;
+                        }
+                        GUI.backgroundColor = new Color(0.0f, 0.0f, 0f);
+                    }
+                    
 
                 }
                 GUILayout.EndScrollView();
@@ -671,6 +729,10 @@ namespace ContractController
                 {
                     if (GUILayout.Button("Stop Sorting"))
                     {
+                        statusString = "Stopped sorting!";
+                        //idleWatch.Restart();
+                        idleWatch.Reset();
+                        idleWatch.Start();
                         isSorting = false;
                     }
                 }
@@ -678,19 +740,36 @@ namespace ContractController
                 {
                     if (GUILayout.Button("Start Sorting"))
                     {
+                        statusString = "Sorting!";
+                        //idleWatch.Restart();
+                        idleWatch.Reset();
+                        idleWatch.Start();
                         isSorting = true;
+
                     }
                 }
                 GUILayout.BeginHorizontal();
                 if (GUILayout.Button("Save"))
                 {
+                    statusString = "Saving...";
                     mySave();
+                    statusString = "Saved!";
+                    //idleWatch.Restart();
+                    idleWatch.Reset();
+                    idleWatch.Start();
                 }
                 if (GUILayout.Button("Load"))
                 {
+                    statusString = "Loading...";
                     myLoad();
+                    statusString = "Loaded!";
+                    //idleWatch.Restart();
+                    idleWatch.Reset();
+                    idleWatch.Start();
                 }
                 GUILayout.EndHorizontal();
+                GUILayout.Label("Status:");
+                GUILayout.Label(statusString);
                 if (GUILayout.Button("Close"))
                 {
                     showGUI = false;
@@ -702,6 +781,7 @@ namespace ContractController
 
         public void editTypePrefGUI(int windowID)
         {
+            GUI.backgroundColor = new Color(0,0,0);
             if (ContractSystem.Instance.isActiveAndEnabled && ContractSystem.Instance != null)
             {
                 //minFunds
@@ -796,17 +876,21 @@ namespace ContractController
                 GUILayout.EndVertical();
                 if (blockedTypes.Contains(editingType))
                 {
+                    
                     if (GUILayout.Button("Accept Type"))
                     {
                         blockedTypes.Remove(editingType);
                     }
+                    //GUI.backgroundColor = new Color(1.0f, 1.0f, 1.00f);
                 }
                 else
                 {
+                    //GUI.backgroundColor = new Color(1.0f, 0.0f, 0f);
                     if (GUILayout.Button("Reject Type"))
                     {
                         blockedTypes.Add(editingType);
                     }
+                    //GUI.backgroundColor = new Color(1.0f, 1.0f, 1.00f);
                 }
                 if (GUILayout.Button("Blacklist Parameters"))
                 {
@@ -835,8 +919,9 @@ namespace ContractController
                     showStringWhitelistGUI = !showStringWhitelistGUI;
                 }
 
-                if (GUILayout.Button("Save"))
+                if (GUILayout.Button("Close"))
                 {
+                    statusString = "Saving...";
                     try
                     {
                         //Debug.Log(typePrefDict.Count);
@@ -868,17 +953,13 @@ namespace ContractController
                         //tp = tp1;
                         //*/
                         //Debug.Log(tp.minFundsCompletion);
+                        statusString = "Saved!";
                         Debug.Log("Settings Saved");
                     }
                     catch (Exception e)
                     {
-
+                        statusString = "Failed to save!";
                     }
-
-                }
-
-                if (GUILayout.Button("Close"))
-                {
                     showtypeprefeditor = false;
                 }
 
@@ -887,6 +968,7 @@ namespace ContractController
         }
         public void changeParameterGUI(int windowID)
         {
+            GUI.backgroundColor = new Color(0, 0, 0);
             TypePreference tp = typeMap[editingType];
             List<Type> bloop = tp.blockedParameters;
             scrollPosition3 = GUILayout.BeginScrollView(scrollPosition3, GUILayout.Width(235), GUILayout.Height(290));
@@ -907,6 +989,7 @@ namespace ContractController
         }
         public void parameterListGUI(int windowID)
         {
+            GUI.backgroundColor = new Color(0, 0, 0);
             TypePreference tp = typeMap[editingType];
             List<Type> bloop = tp.blockedParameters;
 
@@ -931,6 +1014,7 @@ namespace ContractController
         }
         public void autoParameterListGUI(int windowID)
         {
+            GUI.backgroundColor = new Color(0, 0, 0);
             TypePreference tp = typeMap[editingType];
             List<Type> bloop = tp.autoParameters;
             scrollPosition3 = GUILayout.BeginScrollView(scrollPosition3, GUILayout.Width(235), GUILayout.Height(290));
@@ -963,6 +1047,7 @@ namespace ContractController
         }
         public void autoListParameterGUI(int windowID)
         {
+            GUI.backgroundColor = new Color(0, 0, 0);
             TypePreference tp = typeMap[editingType];
             List<Type> bloop = new List<Type>();
             bloop = tp.autoParameters;
@@ -988,6 +1073,7 @@ namespace ContractController
         }
         public void bodyBlacklistGUI(int windowId)
         {
+            GUI.backgroundColor = new Color(0, 0, 0);
             TypePreference tp = typeMap[editingType];
             scrollPosition5 = GUILayout.BeginScrollView(scrollPosition5, GUILayout.Width(235), GUILayout.Height(290));
             foreach (CelestialBody body in FlightGlobals.Bodies)
@@ -1004,6 +1090,7 @@ namespace ContractController
         }
         public void userBodyBlackListGUI(int windowID)
         {
+            GUI.backgroundColor = new Color(0, 0, 0);
             scrollPosition6 = GUILayout.BeginScrollView(scrollPosition6, GUILayout.Width(235), GUILayout.Height(290));
             TypePreference tp = typeMap[editingType];
             List<String> list = tp.blockedBodies;
@@ -1026,6 +1113,7 @@ namespace ContractController
         }
         public void autoBodyListGUI(int windowId)
         {
+            GUI.backgroundColor = new Color(0, 0, 0);
             TypePreference tp = typeMap[editingType];
             scrollPosition7 = GUILayout.BeginScrollView(scrollPosition7, GUILayout.Width(235), GUILayout.Height(290));
             foreach (CelestialBody body in FlightGlobals.Bodies)
@@ -1042,6 +1130,7 @@ namespace ContractController
         }
         public void userAutoBodyListGUI(int windowID)
         {
+            GUI.backgroundColor = new Color(0, 0, 0);
             scrollPosition8 = GUILayout.BeginScrollView(scrollPosition8, GUILayout.Width(235), GUILayout.Height(290));
             TypePreference tp = typeMap[editingType];
             List<String> list = tp.autoBodies;
@@ -1064,6 +1153,7 @@ namespace ContractController
         }
         public void stringBlackListGUI(int windowID)
         {
+            GUI.backgroundColor = new Color(0, 0, 0);
             TypePreference tp = typeMap[editingType];
             GUILayout.Label("Note: The strings are case sensitive");
             stringthing = GUILayout.TextField(stringthing);
@@ -1086,6 +1176,7 @@ namespace ContractController
         }
         public void stringAutoListGUI(int windowID)
         {
+            GUI.backgroundColor = new Color(0, 0, 0);
             TypePreference tp = typeMap[editingType]; 
             GUILayout.Label("Note: The strings are case sensitive");
             stringthing1 = GUILayout.TextField(stringthing1);
@@ -1509,8 +1600,15 @@ namespace ContractController
         {
             foreach (Contract c in contractList)
             {
-                Debug.Log("Removing: " + c.Title);
-                Contracts.ContractSystem.Instance.Contracts.Remove(c);
+                
+                if(c.ContractState == Contract.State.Offered)
+                {
+                    Debug.Log("Removing: " + c.Title);
+                    statusString = "Declining: " + c.Title;
+                    c.Decline();
+                }
+                
+                //Contracts.ContractSystem.Instance.Contracts.Remove(c);
             }
         }
         public void acceptWhitedContracts(List<Contract> contractList)
@@ -1522,6 +1620,7 @@ namespace ContractController
                 if(c.ContractState == Contract.State.Offered)
                 {
                     Debug.Log("Accepting: " + c.Title);
+                    statusString = "Accepting: " + c.Title;
                     c.Accept();
                 }
                 
