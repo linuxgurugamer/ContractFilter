@@ -221,6 +221,24 @@ namespace ContractController
 
                         inited = true;
                     }
+                    //appbutton texture changes
+                    if(isSorting && showGUI)
+                    {
+                        CCButton.SetTexture((Texture)GameDatabase.Instance.GetTexture("ContractFilter/Textures/appButton4", false));
+                    }
+                    else if(isSorting && !showGUI)
+                    {
+                        CCButton.SetTexture((Texture)GameDatabase.Instance.GetTexture("ContractFilter/Textures/appButton3", false));
+                    }
+                    else if(!isSorting && showGUI)
+                    {
+                        CCButton.SetTexture((Texture)GameDatabase.Instance.GetTexture("ContractFilter/Textures/appButton5", false));
+                    }
+                    else
+                    {
+                        CCButton.SetTexture((Texture)GameDatabase.Instance.GetTexture("ContractFilter/Textures/appButton", false));
+                    }
+
                     if (isSorting)
                     {
 
@@ -319,6 +337,7 @@ namespace ContractController
                         DummyVoid,
                         ApplicationLauncher.AppScenes.SPACECENTER,
                         (Texture)GameDatabase.Instance.GetTexture("ContractFilter/Textures/appButton", false));
+                    
                 }
             }
 
@@ -530,15 +549,27 @@ namespace ContractController
                         }
                         else if (line.StartsWith("!"))
                         {
-                            tp.autoBodies.Add(line.Substring(1));
+                            if (!tp.autoBodies.Contains(line.Substring(1)))
+                            {
+                                tp.autoBodies.Add(line.Substring(1));
+                            }
+                            
                         }
                         else if (line.StartsWith("@"))
                         {
-                            tp.blockedStrings.Add(line.Substring(1));
+                            if (!tp.blockedStrings.Contains(line.Substring(1)))
+                            {
+                                tp.blockedStrings.Add(line.Substring(1));
+                            }
+                            
                         }
                         else if (line.StartsWith("#"))
                         {
-                            tp.autoStrings.Add(line.Substring(1));
+                            if (!tp.autoStrings.Contains(line.Substring(1)))
+                            {
+                                tp.autoStrings.Add(line.Substring(1));
+                            }
+                            
                         }
                         typeMap[loadingType] = tp;
                     }
@@ -546,6 +577,7 @@ namespace ContractController
                     file.Close();
                     file.Dispose();
                     statusString = "Loaded!";
+                    
                 }
             }
             catch (Exception e)
@@ -1362,7 +1394,8 @@ namespace ContractController
                 GUILayout.Label(statusString);
                 if (GUILayout.Button("Close"))
                 {
-                    showGUI = false;
+                    //showGUI = false;
+                    OnAppLaunchToggleOff();
                 }
             }
 
