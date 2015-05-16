@@ -86,36 +86,36 @@ namespace ContractController
             tp.maxPrestiege = 3;
 
             tp.minFundsAdvance = 0;
-            tp.maxFundsAdvance = 1000000;
+            tp.maxFundsAdvance = 10000000;
 
             tp.minFundsCompletion = 0;
             tp.minScienceCompletion = 0;
             tp.minRepCompletion = 0;
 
-            tp.maxFundsCompletion = 100000;
-            tp.maxScienceCompletion = 10000;
-            tp.maxRepCompletion = 10000;
+            tp.maxFundsCompletion = 1000000;
+            tp.maxScienceCompletion = 100000;
+            tp.maxRepCompletion = 100000;
 
             tp.minFundsFailure = 0;
             tp.minRepFailure = 0;
 
-            tp.maxFundsFailure = 100000;
-            tp.maxRepFailure = 10000;
+            tp.maxFundsFailure = 1000000;
+            tp.maxRepFailure = 100000;
 
             tp.minFundsAdvanceString = "0";
-            tp.maxFundsAdvanceString = "1000000";
+            tp.maxFundsAdvanceString = "10000000";
             tp.minFundsCompleteString = "0";
-            tp.maxFundsCompleteString = "1000000";
+            tp.maxFundsCompleteString = "10000000";
             tp.minFundsFailureString = "0";
-            tp.maxFundsFailureString = "100000";
+            tp.maxFundsFailureString = "1000000";
 
             tp.minRepCompleteString = "0";
-            tp.maxRepCompleteString = "1000";
+            tp.maxRepCompleteString = "10000";
             tp.minRepFailureString = "0";
-            tp.maxRepFailureString = "10000";
+            tp.maxRepFailureString = "100000";
 
             tp.minScienceCompleteString = "0";
-            tp.maxScienceCompleteString = "1000";
+            tp.maxScienceCompleteString = "100000";
 
             tp.minParamsString = "1";
             tp.maxParamsString = "20";
