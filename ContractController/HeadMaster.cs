@@ -140,6 +140,8 @@ namespace ContractController
         bool buttonNeedsInit = true;
         bool isSorting = false;
 
+        int maxContracts = 2;
+
         //Contract variables
         List<Type> blockedTypes = new List<Type>();
         Dictionary<Type, TypePreference> typeMap = new Dictionary<Type, TypePreference>();
@@ -194,7 +196,7 @@ namespace ContractController
             //Debug.Log("boop");
             //Debug.Log("Active+Enabled?: " + ContractSystem.Instance.isActiveAndEnabled);
 
-            if (HighLogic.LoadedScene == GameScenes.SPACECENTER)
+            if (HighLogic.LoadedScene == GameScenes.SPACECENTER && HighLogic.CurrentGame.Mode == Game.Modes.CAREER)
             {
                 if (ContractSystem.Instance.isActiveAndEnabled && ContractSystem.Instance != null)
                 {
@@ -242,10 +244,23 @@ namespace ContractController
                     {
                         isSorting = !isSorting;
                     }
-
-                    if (isSorting)
+                    Upgradeables.UpgradeableFacility uf = new Upgradeables.UpgradeableFacility();
+                    
+                    float facLevel = ScenarioUpgradeableFacilities.GetFacilityLevel(SpaceCenterFacility.MissionControl);
+                    ScenarioUpgradeableFacilities.RegisterUpgradeable(uf,"0");
+                    if(facLevel == 0)
                     {
-
+                        maxContracts = 2;
+                    }
+                    else if(facLevel == 1)
+                    {
+                        maxContracts = 7;
+                    }
+                    int liveContracts = ContractSystem.Instance.GetActiveContractCount();
+                    
+                    if (isSorting && facLevel != 2)
+                    {
+                        
                         //Debug.Log("Contract types: " + Contracts.ContractSystem.ContractTypes);
                         List<Contract> toDelete = new List<Contract>();
                         List<Contract> toAccept = new List<Contract>();
@@ -404,6 +419,168 @@ namespace ContractController
                         }
                         removeBlackedContracts(toDelete);
                         acceptWhitedContracts(toAccept);
+                    }
+                    else if(isSorting && liveContracts < maxContracts)
+                    {
+                        //Debug.Log("Contract types: " + Contracts.ContractSystem.ContractTypes);
+                        List<Contract> toDelete = new List<Contract>();
+                        List<Contract> toAccept = new List<Contract>();
+                        if (Contracts.ContractSystem.Instance.Contracts != null)
+                        {
+                            foreach (Contract c in Contracts.ContractSystem.Instance.Contracts)
+                            {
+                                //check blocked types
+                                //check blocked bodies
+                                //check blocked strings
+                                //check blocked agents
+                                //check intParams
+                                //check finances
+                                if(liveContracts + toAccept.Count <= maxContracts)
+                                {
+                                    if (checkForBlockedType(c))
+                                    {
+                                        Debug.Log("Adding: " + c.Title + " to be deleted because of blocked type");
+                                        toDelete.Add(c);
+                                    }
+                                    if (checkForBlockedParameters(c))
+                                    {
+                                        Debug.Log("Adding: " + c.Title + " to be deleted because of blocked parameters");
+                                        toDelete.Add(c);
+                                    }
+                                    if (checkForMinFundsAdvance(c))
+                                    {
+                                        Debug.Log("Adding: " + c.Title + " to be deleted because of low fund payout in advance" + "(" + c.FundsAdvance + ")");
+                                        toDelete.Add(c);
+                                    }
+                                    if (checkForMaxFundsAdvance(c))
+                                    {
+                                        Debug.Log("Adding: " + c.Title + " to be deleted because of high fund payout in advance" + "(" + c.FundsAdvance + ")");
+                                        toDelete.Add(c);
+                                    }
+                                    if (checkForMinFundsCompletion(c))
+                                    {
+                                        Debug.Log("Adding: " + c.Title + " to be deleted because of low funds payout on completion" + "(" + c.FundsCompletion + ")");
+                                        toDelete.Add(c);
+                                    }
+                                    if (checkForMaxFundsCompletion(c))
+                                    {
+                                        Debug.Log("Adding: " + c.Title + " to be deleted because of high funds payout on completion" + "(" + c.FundsCompletion + ")");
+                                        toDelete.Add(c);
+                                    }
+                                    if (checkForMinFundsFailure(c))
+                                    {
+                                        Debug.Log("Adding: " + c.Title + " to be deleted because of low funds on failure" + "(" + c.FundsFailure + ")");
+                                        toDelete.Add(c);
+                                    }
+                                    if (checkForMaxFundsFailure(c))
+                                    {
+                                        Debug.Log("Adding: " + c.Title + " to be deleted because of high funds on failure" + "(" + c.FundsFailure + ")");
+                                        toDelete.Add(c);
+                                    }
+                                    if (checkForMinScienceCompletion(c))
+                                    {
+                                        Debug.Log("Adding: " + c.Title + " to be deleted because of low science on completion" + "(" + c.ScienceCompletion + ")");
+                                        toDelete.Add(c);
+                                    }
+                                    if (checkForMaxScienceCompletion(c))
+                                    {
+                                        Debug.Log("Adding: " + c.Title + " to be deleted because of high science on completion" + "(" + c.ScienceCompletion + ")");
+                                        toDelete.Add(c);
+                                    }
+                                    if (checkForMinRepCompletion(c))
+                                    {
+                                        Debug.Log("Adding: " + c.Title + " to be deleted because of low rep on completion" + "(" + c.ReputationCompletion + ")");
+                                        toDelete.Add(c);
+                                    }
+                                    if (checkForMaxRepCompletion(c))
+                                    {
+                                        Debug.Log("Adding: " + c.Title + " to be deleted because of high rep on completion" + "(" + c.ReputationCompletion + ")");
+                                        toDelete.Add(c);
+                                    }
+                                    if (checkForMinRepFailure(c))
+                                    {
+                                        Debug.Log("Adding: " + c.Title + " to be deleted because of low rep on failure" + "(" + c.ReputationFailure + ")");
+                                        toDelete.Add(c);
+                                    }
+                                    if (checkForMaxRepFailure(c))
+                                    {
+                                        Debug.Log("Adding: " + c.Title + " to be deleted because of high rep on failure" + "(" + c.ReputationFailure + ")");
+                                        toDelete.Add(c);
+                                    }
+                                    if (checkForBlockedAgent(c))
+                                    {
+                                        Debug.Log("Adding: " + c.Title + " to be deleted because of blocked agent");
+                                        toDelete.Add(c);
+                                    }
+                                    if (checkForBlockedMentality(c))
+                                    {
+                                        Debug.Log("Adding: " + c.Title + " to be deleted because of blocked mentality");
+                                        toDelete.Add(c);
+                                    }
+                                    if (checkForWhitedType(c))
+                                    {
+                                        Debug.Log("Adding: " + c.Title + " to be accepted because of whited type");
+                                        toAccept.Add(c);
+                                    }
+                                    if (checkForWhitedAgent(c))
+                                    {
+                                        Debug.Log("Adding: " + c.Title + " to be accepted because of whited agent");
+                                        toAccept.Add(c);
+                                    }
+                                    if (checkForWhitedBody(c))
+                                    {
+                                        Debug.Log("Adding: " + c.Title + " to be accepted because of whited body");
+                                        toAccept.Add(c);
+                                    }
+                                    if (checkForWhitedMentality(c))
+                                    {
+                                        Debug.Log("Adding: " + c.Title + " to be accepted because of whited mentality");
+                                        toAccept.Add(c);
+                                    }
+                                    if (checkForWhitedParameter(c))
+                                    {
+                                        Debug.Log("Adding: " + c.Title + " to be accepted because of whited parameter");
+                                        toAccept.Add(c);
+                                    }
+                                    if (checkForWhitedPrestiege(c))
+                                    {
+                                        Debug.Log("Adding: " + c.Title + " to be accepted because of whited prestiege");
+                                        toAccept.Add(c);
+                                    }
+                                    if (checkForWhitedString(c))
+                                    {
+                                        Debug.Log("Adding: " + c.Title + " to be accepted because of whited string");
+                                        toAccept.Add(c);
+                                    }
+                                    if (checkForBlockedStrings(c))
+                                    {
+                                        Debug.Log("Adding: " + c.Title + " to be deleted because of blocked string");
+                                        toDelete.Add(c);
+                                    }
+                                    if (checkForBlockedBody(c))
+                                    {
+                                        Debug.Log("Adding: " + c.Title + " to be deleted because of blocked body");
+                                        toDelete.Add(c);
+                                    }
+                                    if (checkForMinParams(c))
+                                    {
+                                        Debug.Log("Adding: " + c.Title + " to be deleted because of min params");
+                                        toDelete.Add(c);
+                                    }
+                                    if (checkForMaxParams(c))
+                                    {
+                                        Debug.Log("Adding: " + c.Title + " to be deleted because of max params");
+                                        toDelete.Add(c);
+                                    }
+                                }
+                                removeBlackedContracts(toDelete);
+                                acceptWhitedContracts(toAccept);
+                            }
+                        }
+                        else
+                        {
+                            Debug.Log("Contract System is null");
+                        }
                     }
                 }
                 if (idleWatch.ElapsedMilliseconds >= 25000 && !isSorting)
