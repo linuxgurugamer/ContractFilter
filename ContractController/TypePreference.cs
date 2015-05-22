@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 using Contracts;
 using Contracts.Parameters;
@@ -92,15 +91,15 @@ namespace ContractController
             tp.minScienceCompletion = 0;
             tp.minRepCompletion = 0;
 
-            tp.maxFundsCompletion = 1000000;
-            tp.maxScienceCompletion = 100000;
-            tp.maxRepCompletion = 100000;
+            tp.maxFundsCompletion = 10000000;
+            tp.maxScienceCompletion = 10000000;
+            tp.maxRepCompletion = 10000000;
 
             tp.minFundsFailure = 0;
             tp.minRepFailure = 0;
 
             tp.maxFundsFailure = 1000000;
-            tp.maxRepFailure = 100000;
+            tp.maxRepFailure = 10000000;
 
             tp.minFundsAdvanceString = "0";
             tp.maxFundsAdvanceString = "10000000";
@@ -110,12 +109,12 @@ namespace ContractController
             tp.maxFundsFailureString = "1000000";
 
             tp.minRepCompleteString = "0";
-            tp.maxRepCompleteString = "10000";
+            tp.maxRepCompleteString = "1000000";
             tp.minRepFailureString = "0";
-            tp.maxRepFailureString = "100000";
+            tp.maxRepFailureString = "10000000";
 
             tp.minScienceCompleteString = "0";
-            tp.maxScienceCompleteString = "100000";
+            tp.maxScienceCompleteString = "10000000";
 
             tp.minParamsString = "1";
             tp.maxParamsString = "20";

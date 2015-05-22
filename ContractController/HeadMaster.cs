@@ -3,8 +3,8 @@ using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Diagnostics;
+using System.Reflection;
 using UnityEngine;
 using KSP.IO;
 using Contracts;
@@ -139,9 +139,12 @@ namespace ContractController
 
         bool buttonNeedsInit = true;
         bool isSorting = false;
+        float sortTime = 0.02f;
+        String sortTimeString = "0.02";
+        int currentTime = 0;
 
         int maxContracts = 2;
-
+        List<String> CCstrings = new List<string>();
         //Contract variables
         List<Type> blockedTypes = new List<Type>();
         Dictionary<Type, TypePreference> typeMap = new Dictionary<Type, TypePreference>();
@@ -182,6 +185,45 @@ namespace ContractController
             allautoStringListGuid = Guid.NewGuid().GetHashCode();
             //Debug.Log("Active+Enabled?: " + ContractSystem.Instance.isActiveAndEnabled);
             //done = false;
+            
+            //check for DMagic contracts
+            /*
+            string contractAssemblyName = "";
+            foreach (AssemblyLoader.LoadedAssembly loaded in AssemblyLoader.loadedAssemblies)
+            {
+                Debug.Log(loaded.assembly.FullName);
+                if (loaded.assembly.GetName().Name == "ContractConfigurator")
+                {
+                    //Debug.Log("Gotcha Bitch!");
+                    contractAssemblyName = loaded.assembly.FullName;
+                }
+            }
+             * */
+            String contractConfiguratorTypeName = "ContractConfigurator.ContractType";
+            //Type contractType = Type.GetType("ContractConfigurator.ContractType");
+            Type contractType = AssemblyLoader.loadedAssemblies.SelectMany(a => a.assembly.GetExportedTypes())
+                                                        .SingleOrDefault(t => t.FullName == contractConfiguratorTypeName);
+            Debug.Log("isNull?");
+	        if(contractType != null)
+            {
+                Debug.Log("nope");
+                String CCTypeMethod = "AllValidContractTypeNames";
+                PropertyInfo CConfigTypeProperty = contractType.GetProperty(CCTypeMethod);
+                var names = CConfigTypeProperty.GetValue(null, null);
+
+                IEnumerable<string> enumerableNames = (IEnumerable<string>)names;
+                //Debug.Log("List: " + enumerableNames.Count());
+                foreach(String s in enumerableNames)
+                {
+                    Debug.Log("CCType: " + s);
+                    Type t = Type.GetType(s);
+                    Debug.Log("t: " + t.ToString());
+                    CCstrings.Add(s);
+                }
+                //Debug.Log("test");
+            }
+
+            
 
             if (buttonNeedsInit && HighLogic.LoadedScene == GameScenes.SPACECENTER)
             {
@@ -198,245 +240,84 @@ namespace ContractController
 
             if (HighLogic.LoadedScene == GameScenes.SPACECENTER && HighLogic.CurrentGame.Mode == Game.Modes.CAREER)
             {
-                if (ContractSystem.Instance.isActiveAndEnabled && ContractSystem.Instance != null)
+                if(currentTime * Time.fixedDeltaTime >= sortTime)
                 {
-                    if (inited == false)
+                    if (ContractSystem.Instance != null && ContractSystem.Instance.isActiveAndEnabled)
                     {
-                        if (typeMap.Count == 0)
+                        if (inited == false)
                         {
-
-                            String[] files = System.IO.Directory.GetFiles(KSPUtil.ApplicationRootPath + "/GameData/ContractFilter/", "*.cfg");
-
-                            if (files.Contains(KSPUtil.ApplicationRootPath + "/GameData/ContractFilter/settings.cfg"))
+                            if (typeMap.Count == 0)
                             {
-                                initTypePreferences();
-                                myLoad();
+
+                                String[] files = System.IO.Directory.GetFiles(KSPUtil.ApplicationRootPath + "/GameData/ContractFilter/", "*.cfg");
+
+                                if (files.Contains(KSPUtil.ApplicationRootPath + "/GameData/ContractFilter/settings.cfg"))
+                                {
+                                    initTypePreferences();
+                                    myLoad();
+                                }
+                                else
+                                {
+                                    initTypePreferences();
+                                }
+                                idleWatch.Start();
+                                //Debug.Log(typeMap.Count);
+                                //myLoad();
                             }
-                            else
-                            {
-                                initTypePreferences();
-                            }
-                            idleWatch.Start();
-                            //Debug.Log(typeMap.Count);
-                            //myLoad();
+
+                            inited = true;
                         }
-
-                        inited = true;
-                    }
-                    //appbutton texture changes
-                    if(isSorting && showGUI)
-                    {
-                        CCButton.SetTexture((Texture)GameDatabase.Instance.GetTexture("ContractFilter/Textures/appButton4", false));
-                    }
-                    else if(isSorting && !showGUI)
-                    {
-                        CCButton.SetTexture((Texture)GameDatabase.Instance.GetTexture("ContractFilter/Textures/appButton3", false));
-                    }
-                    else if(!isSorting && showGUI)
-                    {
-                        CCButton.SetTexture((Texture)GameDatabase.Instance.GetTexture("ContractFilter/Textures/appButton5", false));
-                    }
-                    else
-                    {
-                        CCButton.SetTexture((Texture)GameDatabase.Instance.GetTexture("ContractFilter/Textures/appButton", false));
-                    }
-                    if(Input.GetKeyDown(KeyCode.Space))
-                    {
-                        isSorting = !isSorting;
-                    }
-                    Upgradeables.UpgradeableFacility uf = new Upgradeables.UpgradeableFacility();
-                    
-                    float facLevel = ScenarioUpgradeableFacilities.GetFacilityLevel(SpaceCenterFacility.MissionControl);
-                    ScenarioUpgradeableFacilities.RegisterUpgradeable(uf,"0");
-                    if(facLevel == 0)
-                    {
-                        maxContracts = 2;
-                    }
-                    else if(facLevel == 1)
-                    {
-                        maxContracts = 7;
-                    }
-                    int liveContracts = ContractSystem.Instance.GetActiveContractCount();
-                    
-                    if (isSorting && facLevel != 2)
-                    {
-                        
-                        //Debug.Log("Contract types: " + Contracts.ContractSystem.ContractTypes);
-                        List<Contract> toDelete = new List<Contract>();
-                        List<Contract> toAccept = new List<Contract>();
-                        if (Contracts.ContractSystem.Instance.Contracts != null)
+                        //appbutton texture changes
+                        if (isSorting && showGUI)
                         {
-                            foreach (Contract c in Contracts.ContractSystem.Instance.Contracts)
-                            {
-                                //check blocked types
-                                //check blocked bodies
-                                //check blocked strings
-                                //check blocked agents
-                                //check intParams
-                                //check finances
-
-
-                                if (checkForBlockedType(c)) 
-                                {
-                                    Debug.Log("Adding: " + c.Title + " to be deleted because of blocked type");
-                                    toDelete.Add(c); 
-                                }
-                                if (checkForBlockedParameters(c)) 
-                                {
-                                    Debug.Log("Adding: " + c.Title + " to be deleted because of blocked parameters");
-                                    toDelete.Add(c); 
-                                }
-                                if (checkForMinFundsAdvance(c)) 
-                                {
-                                    Debug.Log("Adding: " + c.Title + " to be deleted because of low fund payout in advance" + "(" + c.FundsAdvance + ")");
-                                    toDelete.Add(c); 
-                                }
-                                if (checkForMaxFundsAdvance(c)) 
-                                {
-                                    Debug.Log("Adding: " + c.Title + " to be deleted because of high fund payout in advance" + "(" + c.FundsAdvance + ")");
-                                    toDelete.Add(c); 
-                                }
-                                if (checkForMinFundsCompletion(c)) 
-                                {
-                                    Debug.Log("Adding: " + c.Title + " to be deleted because of low funds payout on completion" + "(" + c.FundsCompletion + ")");
-                                    toDelete.Add(c); 
-                                }
-                                if (checkForMaxFundsCompletion(c)) 
-                                {
-                                    Debug.Log("Adding: " + c.Title + " to be deleted because of high funds payout on completion" + "(" + c.FundsCompletion + ")");
-                                    toDelete.Add(c); 
-                                }
-                                if (checkForMinFundsFailure(c)) 
-                                {
-                                    Debug.Log("Adding: " + c.Title + " to be deleted because of low funds on failure" + "(" + c.FundsFailure + ")");
-                                    toDelete.Add(c); 
-                                }
-                                if (checkForMaxFundsFailure(c)) 
-                                {
-                                    Debug.Log("Adding: " + c.Title + " to be deleted because of high funds on failure" + "(" + c.FundsFailure + ")");
-                                    toDelete.Add(c); 
-                                }
-                                if (checkForMinScienceCompletion(c)) 
-                                {
-                                    Debug.Log("Adding: " + c.Title + " to be deleted because of low science on completion" + "(" + c.ScienceCompletion + ")");
-                                    toDelete.Add(c); 
-                                }
-                                if (checkForMaxScienceCompletion(c))
-                                {
-                                    Debug.Log("Adding: " + c.Title + " to be deleted because of high science on completion" + "(" + c.ScienceCompletion + ")");
-                                    toDelete.Add(c); 
-                                }
-                                if (checkForMinRepCompletion(c)) 
-                                {
-                                    Debug.Log("Adding: " + c.Title + " to be deleted because of low rep on completion" + "(" + c.ReputationCompletion + ")");
-                                    toDelete.Add(c); 
-                                }
-                                if (checkForMaxRepCompletion(c)) 
-                                {
-                                    Debug.Log("Adding: " + c.Title + " to be deleted because of high rep on completion" + "(" + c.ReputationCompletion + ")");
-                                    toDelete.Add(c); 
-                                }
-                                if (checkForMinRepFailure(c)) 
-                                {
-                                    Debug.Log("Adding: " + c.Title + " to be deleted because of low rep on failure" + "(" + c.ReputationFailure + ")");
-                                    toDelete.Add(c); 
-                                }
-                                if (checkForMaxRepFailure(c)) 
-                                {
-                                    Debug.Log("Adding: " + c.Title + " to be deleted because of high rep on failure" + "(" + c.ReputationFailure + ")");
-                                    toDelete.Add(c); 
-                                }
-                                if (checkForBlockedAgent(c)) 
-                                {
-                                    Debug.Log("Adding: " + c.Title + " to be deleted because of blocked agent");
-                                    toDelete.Add(c); 
-                                }
-                                if (checkForBlockedMentality(c))
-                                {
-                                    Debug.Log("Adding: " + c.Title + " to be deleted because of blocked mentality");
-                                    toDelete.Add(c); 
-                                }
-                                if (checkForWhitedType(c)) 
-                                {
-                                    Debug.Log("Adding: " + c.Title + " to be accepted because of whited type");
-                                    toAccept.Add(c); 
-                                }
-                                if (checkForWhitedAgent(c)) 
-                                {
-                                    Debug.Log("Adding: " + c.Title + " to be accepted because of whited agent");
-                                    toAccept.Add(c); 
-                                }
-                                if (checkForWhitedBody(c)) 
-                                {
-                                    Debug.Log("Adding: " + c.Title + " to be accepted because of whited body");
-                                    toAccept.Add(c); 
-                                }
-                                if (checkForWhitedMentality(c)) 
-                                {
-                                    Debug.Log("Adding: " + c.Title + " to be accepted because of whited mentality");
-                                    toAccept.Add(c); 
-                                }
-                                if (checkForWhitedParameter(c)) 
-                                {
-                                    Debug.Log("Adding: " + c.Title + " to be accepted because of whited parameter");
-                                    toAccept.Add(c); 
-                                }
-                                if (checkForWhitedPrestiege(c)) 
-                                {
-                                    Debug.Log("Adding: " + c.Title + " to be accepted because of whited prestiege");
-                                    toAccept.Add(c); 
-                                }
-                                if (checkForWhitedString(c)) 
-                                {
-                                    Debug.Log("Adding: " + c.Title + " to be accepted because of whited string");
-                                    toAccept.Add(c); 
-                                }
-                                if (checkForBlockedStrings(c)) 
-                                {
-                                    Debug.Log("Adding: " + c.Title + " to be deleted because of blocked string");
-                                    toDelete.Add(c); 
-                                }
-                                if (checkForBlockedBody(c)) 
-                                {
-                                    Debug.Log("Adding: " + c.Title + " to be deleted because of blocked body");
-                                    toDelete.Add(c); 
-                                }
-                                if (checkForMinParams(c)) 
-                                {
-                                    Debug.Log("Adding: " + c.Title + " to be deleted because of min params");
-                                    toDelete.Add(c); 
-                                }
-                                if (checkForMaxParams(c)) 
-                                {
-                                    Debug.Log("Adding: " + c.Title + " to be deleted because of max params");
-                                    toDelete.Add(c); 
-                                }
-                            }
+                            CCButton.SetTexture((Texture)GameDatabase.Instance.GetTexture("ContractFilter/Textures/appButton4", false));
+                        }
+                        else if (isSorting && !showGUI)
+                        {
+                            CCButton.SetTexture((Texture)GameDatabase.Instance.GetTexture("ContractFilter/Textures/appButton3", false));
+                        }
+                        else if (!isSorting && showGUI)
+                        {
+                            CCButton.SetTexture((Texture)GameDatabase.Instance.GetTexture("ContractFilter/Textures/appButton5", false));
                         }
                         else
                         {
-                            Debug.Log("Contract System is null");
+                            CCButton.SetTexture((Texture)GameDatabase.Instance.GetTexture("ContractFilter/Textures/appButton", false));
                         }
-                        removeBlackedContracts(toDelete);
-                        acceptWhitedContracts(toAccept);
-                    }
-                    else if(isSorting && liveContracts < maxContracts)
-                    {
-                        //Debug.Log("Contract types: " + Contracts.ContractSystem.ContractTypes);
-                        List<Contract> toDelete = new List<Contract>();
-                        List<Contract> toAccept = new List<Contract>();
-                        if (Contracts.ContractSystem.Instance.Contracts != null)
+                        if (Input.GetKeyDown(KeyCode.Space))
                         {
-                            foreach (Contract c in Contracts.ContractSystem.Instance.Contracts)
+                            isSorting = !isSorting;
+                        }
+
+                        float facLevel = ScenarioUpgradeableFacilities.GetFacilityLevel(SpaceCenterFacility.MissionControl);
+                        if (facLevel == 0)
+                        {
+                            maxContracts = 2;
+                        }
+                        else if (facLevel == 1)
+                        {
+                            maxContracts = 7;
+                        }
+                        int liveContracts = ContractSystem.Instance.GetActiveContractCount();
+
+                        if (isSorting && facLevel != 2)
+                        {
+
+                            //Debug.Log("Contract types: " + Contracts.ContractSystem.ContractTypes);
+                            List<Contract> toDelete = new List<Contract>();
+                            List<Contract> toAccept = new List<Contract>();
+                            if (Contracts.ContractSystem.Instance.Contracts != null)
                             {
-                                //check blocked types
-                                //check blocked bodies
-                                //check blocked strings
-                                //check blocked agents
-                                //check intParams
-                                //check finances
-                                if(liveContracts + toAccept.Count <= maxContracts)
+                                foreach (Contract c in Contracts.ContractSystem.Instance.Contracts)
                                 {
+                                    //check blocked types
+                                    //check blocked bodies
+                                    //check blocked strings
+                                    //check blocked agents
+                                    //check intParams
+                                    //check finances
+
+
                                     if (checkForBlockedType(c))
                                     {
                                         Debug.Log("Adding: " + c.Title + " to be deleted because of blocked type");
@@ -573,16 +454,184 @@ namespace ContractController
                                         toDelete.Add(c);
                                     }
                                 }
-                                removeBlackedContracts(toDelete);
-                                acceptWhitedContracts(toAccept);
+                            }
+                            else
+                            {
+                                Debug.Log("Contract System is null");
+                            }
+                            removeBlackedContracts(toDelete);
+                            acceptWhitedContracts(toAccept);
+                        }
+                        else if (isSorting && liveContracts < maxContracts)
+                        {
+                            //Debug.Log("Contract types: " + Contracts.ContractSystem.ContractTypes);
+                            List<Contract> toDelete = new List<Contract>();
+                            List<Contract> toAccept = new List<Contract>();
+                            if (Contracts.ContractSystem.Instance.Contracts != null)
+                            {
+                                foreach (Contract c in Contracts.ContractSystem.Instance.Contracts)
+                                {
+                                    //check blocked types
+                                    //check blocked bodies
+                                    //check blocked strings
+                                    //check blocked agents
+                                    //check intParams
+                                    //check finances
+                                    if (liveContracts + toAccept.Count <= maxContracts)
+                                    {
+                                        if (checkForBlockedType(c))
+                                        {
+                                            Debug.Log("Adding: " + c.Title + " to be deleted because of blocked type");
+                                            toDelete.Add(c);
+                                        }
+                                        if (checkForBlockedParameters(c))
+                                        {
+                                            Debug.Log("Adding: " + c.Title + " to be deleted because of blocked parameters");
+                                            toDelete.Add(c);
+                                        }
+                                        if (checkForMinFundsAdvance(c))
+                                        {
+                                            Debug.Log("Adding: " + c.Title + " to be deleted because of low fund payout in advance" + "(" + c.FundsAdvance + ")");
+                                            toDelete.Add(c);
+                                        }
+                                        if (checkForMaxFundsAdvance(c))
+                                        {
+                                            Debug.Log("Adding: " + c.Title + " to be deleted because of high fund payout in advance" + "(" + c.FundsAdvance + ")");
+                                            toDelete.Add(c);
+                                        }
+                                        if (checkForMinFundsCompletion(c))
+                                        {
+                                            Debug.Log("Adding: " + c.Title + " to be deleted because of low funds payout on completion" + "(" + c.FundsCompletion + ")");
+                                            toDelete.Add(c);
+                                        }
+                                        if (checkForMaxFundsCompletion(c))
+                                        {
+                                            Debug.Log("Adding: " + c.Title + " to be deleted because of high funds payout on completion" + "(" + c.FundsCompletion + ")");
+                                            toDelete.Add(c);
+                                        }
+                                        if (checkForMinFundsFailure(c))
+                                        {
+                                            Debug.Log("Adding: " + c.Title + " to be deleted because of low funds on failure" + "(" + c.FundsFailure + ")");
+                                            toDelete.Add(c);
+                                        }
+                                        if (checkForMaxFundsFailure(c))
+                                        {
+                                            Debug.Log("Adding: " + c.Title + " to be deleted because of high funds on failure" + "(" + c.FundsFailure + ")");
+                                            toDelete.Add(c);
+                                        }
+                                        if (checkForMinScienceCompletion(c))
+                                        {
+                                            Debug.Log("Adding: " + c.Title + " to be deleted because of low science on completion" + "(" + c.ScienceCompletion + ")");
+                                            toDelete.Add(c);
+                                        }
+                                        if (checkForMaxScienceCompletion(c))
+                                        {
+                                            Debug.Log("Adding: " + c.Title + " to be deleted because of high science on completion" + "(" + c.ScienceCompletion + ")");
+                                            toDelete.Add(c);
+                                        }
+                                        if (checkForMinRepCompletion(c))
+                                        {
+                                            Debug.Log("Adding: " + c.Title + " to be deleted because of low rep on completion" + "(" + c.ReputationCompletion + ")");
+                                            toDelete.Add(c);
+                                        }
+                                        if (checkForMaxRepCompletion(c))
+                                        {
+                                            Debug.Log("Adding: " + c.Title + " to be deleted because of high rep on completion" + "(" + c.ReputationCompletion + ")");
+                                            toDelete.Add(c);
+                                        }
+                                        if (checkForMinRepFailure(c))
+                                        {
+                                            Debug.Log("Adding: " + c.Title + " to be deleted because of low rep on failure" + "(" + c.ReputationFailure + ")");
+                                            toDelete.Add(c);
+                                        }
+                                        if (checkForMaxRepFailure(c))
+                                        {
+                                            Debug.Log("Adding: " + c.Title + " to be deleted because of high rep on failure" + "(" + c.ReputationFailure + ")");
+                                            toDelete.Add(c);
+                                        }
+                                        if (checkForBlockedAgent(c))
+                                        {
+                                            Debug.Log("Adding: " + c.Title + " to be deleted because of blocked agent");
+                                            toDelete.Add(c);
+                                        }
+                                        if (checkForBlockedMentality(c))
+                                        {
+                                            Debug.Log("Adding: " + c.Title + " to be deleted because of blocked mentality");
+                                            toDelete.Add(c);
+                                        }
+                                        if (checkForWhitedType(c))
+                                        {
+                                            Debug.Log("Adding: " + c.Title + " to be accepted because of whited type");
+                                            toAccept.Add(c);
+                                        }
+                                        if (checkForWhitedAgent(c))
+                                        {
+                                            Debug.Log("Adding: " + c.Title + " to be accepted because of whited agent");
+                                            toAccept.Add(c);
+                                        }
+                                        if (checkForWhitedBody(c))
+                                        {
+                                            Debug.Log("Adding: " + c.Title + " to be accepted because of whited body");
+                                            toAccept.Add(c);
+                                        }
+                                        if (checkForWhitedMentality(c))
+                                        {
+                                            Debug.Log("Adding: " + c.Title + " to be accepted because of whited mentality");
+                                            toAccept.Add(c);
+                                        }
+                                        if (checkForWhitedParameter(c))
+                                        {
+                                            Debug.Log("Adding: " + c.Title + " to be accepted because of whited parameter");
+                                            toAccept.Add(c);
+                                        }
+                                        if (checkForWhitedPrestiege(c))
+                                        {
+                                            Debug.Log("Adding: " + c.Title + " to be accepted because of whited prestiege");
+                                            toAccept.Add(c);
+                                        }
+                                        if (checkForWhitedString(c))
+                                        {
+                                            Debug.Log("Adding: " + c.Title + " to be accepted because of whited string");
+                                            toAccept.Add(c);
+                                        }
+                                        if (checkForBlockedStrings(c))
+                                        {
+                                            Debug.Log("Adding: " + c.Title + " to be deleted because of blocked string");
+                                            toDelete.Add(c);
+                                        }
+                                        if (checkForBlockedBody(c))
+                                        {
+                                            Debug.Log("Adding: " + c.Title + " to be deleted because of blocked body");
+                                            toDelete.Add(c);
+                                        }
+                                        if (checkForMinParams(c))
+                                        {
+                                            Debug.Log("Adding: " + c.Title + " to be deleted because of min params");
+                                            toDelete.Add(c);
+                                        }
+                                        if (checkForMaxParams(c))
+                                        {
+                                            Debug.Log("Adding: " + c.Title + " to be deleted because of max params");
+                                            toDelete.Add(c);
+                                        }
+                                    }
+                                    removeBlackedContracts(toDelete);
+                                    acceptWhitedContracts(toAccept);
+                                }
+                            }
+                            else
+                            {
+                                Debug.Log("Contract System is null");
                             }
                         }
-                        else
-                        {
-                            Debug.Log("Contract System is null");
-                        }
                     }
+                    currentTime = 0;
                 }
+                else
+                {
+                    currentTime++;
+                }
+                
                 if (idleWatch.ElapsedMilliseconds >= 25000 && !isSorting)
                 {
                     statusString = "Idling";
@@ -612,7 +661,7 @@ namespace ContractController
                         DummyVoid,
                         ApplicationLauncher.AppScenes.SPACECENTER,
                         (Texture)GameDatabase.Instance.GetTexture("ContractFilter/Textures/appButton", false));
-                    
+                    showGUI = CCButton.toggleButton.Value;
                 }
             }
 
@@ -637,6 +686,7 @@ namespace ContractController
         void OnAppLaunchToggleOff()
         {
             showGUI = false;
+            if (CCButton.toggleButton.Value != showGUI) { CCButton.toggleButton.Value = showGUI; }
         }
 
         void OnAppLaunchToggleOn()
@@ -644,6 +694,7 @@ namespace ContractController
             if (HighLogic.LoadedScene == GameScenes.SPACECENTER)
             {
                 showGUI = true;
+                if (CCButton.toggleButton.Value != showGUI) { CCButton.toggleButton.Value = showGUI; }
             }
 
         }
@@ -1343,6 +1394,8 @@ namespace ContractController
                             statusString = "Failed to save!";
                         }
                     }
+                    stringthing = "";
+                    stringthing1 = "";
                     Debug.Log("Settings Saved");
                     statusString = "Saved!";
                     //idleWatch.Restart();
@@ -1622,6 +1675,12 @@ namespace ContractController
                     showParameterListGUI = false;
                     showAutoParamGUI = false;
                 }
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("Time interval:");
+                sortTimeString = GUILayout.TextField(sortTimeString + " s");
+                sortTime = float.Parse(sortTimeString);
+                GUILayout.EndHorizontal();
+
                 if (isSorting)
                 {
                     if (GUILayout.Button("Stop Sorting"))
@@ -2099,14 +2158,45 @@ namespace ContractController
         {
             Debug.Log("Initing type preferences");
             //typeMap = new Dictionary<Type, TypePreference>();
+            Type CConfigType = AssemblyLoader.loadedAssemblies.SelectMany(a => a.assembly.GetExportedTypes())
+                .SingleOrDefault(t => t.FullName == "ContractConfigurator.ConfiguredContract");
+            Type CConfigType1 = AssemblyLoader.loadedAssemblies.SelectMany(a => a.assembly.GetExportedTypes())
+                .SingleOrDefault(t => t.FullName == "ContractConfigurator.ContractType");
+            MethodInfo methodInfo = null;
+            FieldInfo fI = null;
+            if(CConfigType != null)
+            {
+                methodInfo = CConfigType.GetProperty("contractType").GetGetMethod();
+            }
+            if(CConfigType1 != null)
+            {
+                fI = CConfigType1.GetField("name");
+            }
 
+            
+            
             if (ContractSystem.ContractTypes != null)
             {
                 foreach (Type t in ContractSystem.ContractTypes)
                 {
                     Debug.Log("Adding Type: " + t.Name);
-                    TypePreference tp = TypePreference.getDefaultTypePreference();
-                    typeMap.Add(t, tp);
+                    if(t.Name != "ConfiguredContract")
+                    {
+                        TypePreference tp = TypePreference.getDefaultTypePreference();
+                        typeMap.Add(t, tp);
+                    }
+                    else
+                    {
+                        Debug.Log(t.Name);
+                        object obj = methodInfo.Invoke(t,null);
+                        String name = (String)fI.GetValue(obj);
+                        Debug.Log("Super special shit name: " + name);
+                    }
+                    
+                }
+                foreach(String s in CCstrings)
+                {
+
                 }
             }
             inited = true;
