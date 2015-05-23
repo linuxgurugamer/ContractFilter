@@ -61,6 +61,7 @@ namespace ContractController
 
         
         public List<String> blockedStrings;
+        
         public List<String> blockedBodies;
         public List<Type> blockedParameters;
         public List<Agent> blockedAgents;
@@ -69,7 +70,6 @@ namespace ContractController
         
 
         public List<String> autoStrings;
-        public List<Type> autoTypes;
         public List<String> autoBodies;
         public List<Type> autoParameters;
         public List<Agent> autoAgents;
@@ -102,19 +102,19 @@ namespace ContractController
             tp.maxRepFailure = 10000000;
 
             tp.minFundsAdvanceString = "0";
-            tp.maxFundsAdvanceString = "10000000";
+            tp.maxFundsAdvanceString = "1000000";
             tp.minFundsCompleteString = "0";
-            tp.maxFundsCompleteString = "10000000";
+            tp.maxFundsCompleteString = "1000000";
             tp.minFundsFailureString = "0";
             tp.maxFundsFailureString = "1000000";
 
             tp.minRepCompleteString = "0";
-            tp.maxRepCompleteString = "1000000";
+            tp.maxRepCompleteString = "100000";
             tp.minRepFailureString = "0";
-            tp.maxRepFailureString = "10000000";
+            tp.maxRepFailureString = "1000000";
 
             tp.minScienceCompleteString = "0";
-            tp.maxScienceCompleteString = "10000000";
+            tp.maxScienceCompleteString = "1000000";
 
             tp.minParamsString = "1";
             tp.maxParamsString = "20";
@@ -129,7 +129,6 @@ namespace ContractController
             tp.blockedMentalities = new List<AgentMentality>();
 
             tp.autoStrings = new List<string>();
-            tp.autoTypes = new List<Type>();
             tp.autoBodies = new List<string>();
             tp.autoParameters = new List<Type>();
             tp.autoAgents = new List<Agent>();
