@@ -147,11 +147,8 @@ namespace ContractController
         List<String> CCstrings = new List<string>();
         //Contract variables
         List<Type> blockedTypes = new List<Type>();
-        Dictionary<String, TypePreference> typeMap = new Dictionary<String, TypePreference>();
+        Dictionary<Type, TypePreference> typeMap = new Dictionary<Type, TypePreference>();
         List<Type> parameters = new List<Type>();
-
-        static MethodInfo subType = null;
-
 
         void Awake()
         {
@@ -311,7 +308,7 @@ namespace ContractController
                             List<Contract> toAccept = new List<Contract>();
                             if (Contracts.ContractSystem.Instance.Contracts != null)
                             {
-                                foreach(Contract c in Contracts.ContractSystem.Instance.Contracts)
+                                foreach (Contract c in Contracts.ContractSystem.Instance.Contracts)
                                 {
                                     //check blocked types
                                     //check blocked bodies
@@ -1640,19 +1637,8 @@ namespace ContractController
                 {
                     if (blockedTypes.Contains(t))
                     {
-                        String contractName = t.Name;
-
-
-                        //ContractType.subType = string
                         GUI.backgroundColor = new Color(1.0f, 0.25f, 0.25f);
-                        if (t.Name == "ConfiguredContract")
-                        {
-                            
-                            //Debug.Log("CC: "+ (String)subType.Invoke(t, null));
-                            //contractName = (String)subType.Invoke(t,null);
-                        }
-
-                        if (GUILayout.Button(contractName))
+                        if (GUILayout.Button(t.Name))
                         {
                             editingType = t;
                             showtypeprefeditor = true;
@@ -1661,7 +1647,6 @@ namespace ContractController
                             showAutoParamGUI = false;
                             showEditAllGUI = false;
                         }
-                        
                         GUI.backgroundColor = new Color(0.0f, 0.0f, 0f);
                     }
                     else
@@ -2177,12 +2162,11 @@ namespace ContractController
                 .SingleOrDefault(t => t.FullName == "ContractConfigurator.ConfiguredContract");
             Type CConfigType1 = AssemblyLoader.loadedAssemblies.SelectMany(a => a.assembly.GetExportedTypes())
                 .SingleOrDefault(t => t.FullName == "ContractConfigurator.ContractType");
-            
+            MethodInfo methodInfo = null;
             FieldInfo fI = null;
             if(CConfigType != null)
             {
-                subType = CConfigType.GetProperty("subType").GetGetMethod();
-                
+                methodInfo = CConfigType.GetProperty("contractType").GetGetMethod();
             }
             if(CConfigType1 != null)
             {
@@ -2204,7 +2188,7 @@ namespace ContractController
                     else
                     {
                         Debug.Log(t.Name);
-                        object obj = subType.Invoke(t,null);
+                        object obj = methodInfo.Invoke(t,null);
                         String name = (String)fI.GetValue(obj);
                         Debug.Log("Super special shit name: " + name);
                     }
