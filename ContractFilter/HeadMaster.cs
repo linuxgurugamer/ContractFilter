@@ -13,7 +13,7 @@ using Contracts.Agents;
 using Contracts.Predicates;
 using Contracts.Templates;
 using Contracts.Agents.Mentalities;
-
+using KSP.UI.Screens;
 using File = System.IO.File;
 using Debug = UnityEngine.Debug;
 
@@ -187,22 +187,7 @@ namespace ContractController
             allstringListGuid = Guid.NewGuid().GetHashCode();
             allautoStringGuid = Guid.NewGuid().GetHashCode();
             allautoStringListGuid = Guid.NewGuid().GetHashCode();
-            //Debug.Log("Active+Enabled?: " + ContractSystem.Instance.isActiveAndEnabled);
-            //done = false;
             
-            //check for DMagic contracts
-            /*
-            string contractAssemblyName = "";
-            foreach (AssemblyLoader.LoadedAssembly loaded in AssemblyLoader.loadedAssemblies)
-            {
-                Debug.Log(loaded.assembly.FullName);
-                if (loaded.assembly.GetName().Name == "ContractConfigurator")
-                {
-                    //Debug.Log("Gotcha Bitch!");
-                    contractAssemblyName = loaded.assembly.FullName;
-                }
-            }
-             * */
             String contractConfiguratorTypeName = "ContractConfigurator.ContractType";
             //Type contractType = Type.GetType("ContractConfigurator.ContractType");
             Type contractType = AssemblyLoader.loadedAssemblies.SelectMany(a => a.assembly.GetExportedTypes())
@@ -947,6 +932,8 @@ namespace ContractController
                 {
                     Debug.Log("Writing");
                     //Debug.Log(blockedTypes.Count);
+                    file.WriteLine("SETTINGS");
+                    file.WriteLine("{");
                     file.WriteLine("Blocked Types:");
                     if (blockedTypes != null && blockedTypes.Count > 0)
                     {
@@ -1022,6 +1009,7 @@ namespace ContractController
 
 
                     file.WriteLine("---");
+                    file.WriteLine("}");
                     statusString = "Saved!";
                     Debug.Log("Saved");
                     file.Close();
@@ -1698,6 +1686,12 @@ namespace ContractController
                     showAutoParamGUI = false;
                 }
                 GUILayout.BeginHorizontal();
+                if(GUILayout.Button("Reset"))
+                {
+                    Debug.Log("Resetting");
+                    initTypePreferences();
+                    Debug.Log("Resetted");
+                }
                 GUILayout.Label("Time interval:");
                 sortTimeString = GUILayout.TextField(sortTimeString);
                 if(GUILayout.Button("Set"))
@@ -2199,6 +2193,7 @@ namespace ContractController
                 foreach (Type t in ContractSystem.ContractTypes)
                 {
                     Debug.Log("Adding Type: " + t.Name);
+                    
                     if(t.Name != "ConfiguredContract")
                     {
                         TypePreference tp = TypePreference.getDefaultTypePreference();
