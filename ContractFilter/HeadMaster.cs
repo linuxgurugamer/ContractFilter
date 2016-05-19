@@ -156,7 +156,6 @@ namespace ContractController
 
         void Awake()
         {
-
             DontDestroyOnLoad(this);
             Debug.Log("*yawn* I'm awake");
             mainGUID = Guid.NewGuid().GetHashCode();
@@ -1023,9 +1022,9 @@ namespace ContractController
         }
         void OnGUI()
         {
-            if (showGUI)
+            if(showGUI)
             {
-                if (ContractSystem.Instance.isActiveAndEnabled && ContractSystem.Instance != null)
+                if(ContractSystem.Instance != null && ContractSystem.Instance.isActiveAndEnabled)
                 {
                     mainGUI = GUI.Window(mainGUID, mainGUI, mainGUIWindow, "Contract Filter~");
                     if (showtypeprefeditor)
