@@ -1343,11 +1343,12 @@ namespace ContractController
                 {
                     showAllStringWhitelistGUI = !showAllStringWhitelistGUI;
                 }
-                if(GUILayout.Button("Close"))
+                if(GUILayout.Button("Close and Save"))
                 {
                     statusString = "Saving All...";
                     //mySave();
-                    foreach (String t in typeMap.Keys)
+                    List<String> tps = typeMap.Keys.ToList();
+                    foreach (String t in tps)
                     {
                         try
                         {
@@ -1396,6 +1397,7 @@ namespace ContractController
                         catch (Exception e)
                         {
                             statusString = "Failed to save!";
+                            Debug.Log("Exception: " + e);
                         }
                     }
                     stringthing = "";
@@ -1636,8 +1638,8 @@ namespace ContractController
                 GUILayout.Label("Choose the contract type you want to edit:");
                 scrollPosition = GUILayout.BeginScrollView(scrollPosition, GUILayout.Width(235), GUILayout.Height(375));
                 //mainGUI.position = scrollPosition;
-
-                foreach (String t in typeMap.Keys)
+                List<String> tps = typeMap.Keys.ToList();
+                foreach (String t in tps)
                 {
                     if (blockedTypes.Contains(t))
                     {
@@ -2582,7 +2584,8 @@ namespace ContractController
                 {
                     Debug.Log("Removing: " + c.Title);
                     statusString = "Declining: " + c.Title;
-                    c.Decline();
+                    //c.Decline();
+                    c.Withdraw();
                 }
 
                 //Contracts.ContractSystem.Instance.Contracts.Remove(c);
